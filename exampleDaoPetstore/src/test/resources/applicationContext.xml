@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<context:property-placeholder
+		location="src/test/resources/configuration.properties" />
+
+
+	<bean id="datasource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass">
+			<value>${datasource_driver}</value>
+		</property>
+		<property name="jdbcUrl">
+			<value>${datasource_url}</value>
+		</property>
+		<property name="user">
+			<value>${datasource_username}</value>
+		</property>
+		<property name="password">
+			<value>${datasource_password}</value>
+		</property>
+	</bean>
+
+	<bean id="DaoFactory" class="org.example.petstore.dao.DaoFactory" init-method="init">
+		<property name="datasource" ref="datasource"></property>
+		<property name="charsetConverter">
+			<bean
+				class="it.mengoni.persistence.dao.CharsetConverterIso88591toUtf8"></bean>
+		</property>
+	</bean>
+
+</beans>
