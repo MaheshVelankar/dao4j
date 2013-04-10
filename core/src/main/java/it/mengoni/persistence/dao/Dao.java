@@ -11,6 +11,8 @@ import org.javatuples.Tuple;
 
 public interface Dao<T extends PersistentObject> {
 
+	public enum DatabaseProductType {firebird, postgresql, mysql, oracle, unknow}
+
 	public int delete(T bean) throws LogicError;
 
 	public int delete(Tuple key) throws LogicError;

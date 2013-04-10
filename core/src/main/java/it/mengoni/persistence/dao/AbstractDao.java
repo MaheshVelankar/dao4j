@@ -29,6 +29,7 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 	protected abstract String getDeleteSql();
 	protected abstract String getUpdateSql();
 	protected abstract int setParams(PreparedStatement stm, T bean) throws SQLException;
+	protected it.mengoni.persistence.dao.Dao.DatabaseProductType databaseProductType;
 
 	protected String[] getKeyNames() {
 		return keyNames;
@@ -109,8 +110,6 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 			}
 		}
 	};
-	private boolean firebird;
-	private boolean postgresql;
 
 	public AbstractDao(JdbcHelper jdbcHelper, CharsetConverter charsetConverter, String... keyNames) {
 		if (jdbcHelper==null )
@@ -120,9 +119,7 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 		this.charsetConverter = charsetConverter;
 		this.jdbcHelper = jdbcHelper;
 		this.keyNames = keyNames;
-		String pn = jdbcHelper.getDatabaseProductName();
-		this.firebird = pn!=null && pn.toLowerCase().contains("firebird");
-		this.postgresql = pn!=null && pn.toLowerCase().contains("postgresql");
+		this.databaseProductType = jdbcHelper.getDatabaseProductType();
 	}
 
 
@@ -142,12 +139,12 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 	protected String calcPreselect(int page, int pageSize) throws LogicError {
 		if (page>0 && pageSize>0){
 			StringBuilder preselect = new StringBuilder(" ");
-			if (isFirebird()){
+			if (databaseProductType==DatabaseProductType.firebird){
 				preselect.append("first " + pageSize).append(" ");
 				if (page>1)
 					preselect.append("skip ").append((page-1)*pageSize).append(" ");
 			}
-			if (isPostgresql()){
+			if (databaseProductType==DatabaseProductType.postgresql){
 				/*Now suppose you wanted to show results 11-20. With the OFFSET keyword its just as easy, the following query will do:
 
 SELECT column FROM table
@@ -336,12 +333,14 @@ LIMIT 10 OFFSET 10*/
 	public List<T> getListForOrder(String orderBy, Condition... conditions) throws LogicError{
 		return getListForInner(0,0, orderBy, conditions);
 	}
-	public boolean isFirebird() {
-		return firebird;
+	public it.mengoni.persistence.dao.Dao.DatabaseProductType getDatabaseProductType() {
+		return databaseProductType;
 	}
-	public boolean isPostgresql() {
-		return postgresql;
+	public void setDatabaseProductType(
+			it.mengoni.persistence.dao.Dao.DatabaseProductType databaseProductType) {
+		this.databaseProductType = databaseProductType;
 	}
+
 
 
 }

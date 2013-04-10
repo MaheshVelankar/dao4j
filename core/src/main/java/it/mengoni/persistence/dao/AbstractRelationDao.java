@@ -47,7 +47,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		try{
 			return super.insert(bean);
 		} catch (SystemError e) {
-			if (e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
+			if (databaseProductType==DatabaseProductType.firebird && e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
 				throw new LogicError(String.format(isIt?PK_ERR_ITA:PK_ERR, relationName, dump(bean.getKey())));
 			}
 			throw e;
@@ -75,7 +75,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		try{
 			return super.update(bean);
 		} catch (SystemError e) {
-			if (e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
+			if (databaseProductType==DatabaseProductType.firebird && e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
 				throw new LogicError(String.format(isIt?PK_ERR_ITA:PK_ERR, relationName, dump(bean.getKey())));
 			}
 			throw e;
@@ -430,7 +430,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		if (selectSql==null || (preselect!=null && !preselect.isEmpty())){
 			List<FieldJoin<T, ?>> joinList = new ArrayList<FieldJoin<T, ?>>();
 			StringBuilder ret = new StringBuilder("select ");
-			if (isFirebird() && preselect!=null && !preselect.isEmpty())
+			if (databaseProductType==DatabaseProductType.firebird && preselect!=null && !preselect.isEmpty())
 				ret.append(preselect).append(" ");
 			for (int i = 0; i < fields.size(); i++) {
 				Field<T, ?> field = fields.get(i);
@@ -455,7 +455,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			if (orderBy!=null && !orderBy.trim().isEmpty()){
 				ret.append(" order by ").append(orderBy);
 			}
-			if (isPostgresql() && preselect!=null && !preselect.isEmpty())
+			if (databaseProductType==DatabaseProductType.postgresql && preselect!=null && !preselect.isEmpty())
 				ret.append(preselect).append(" ");
 			selectSql = ret.toString();
 		}

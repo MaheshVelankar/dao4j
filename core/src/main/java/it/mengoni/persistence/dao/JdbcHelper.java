@@ -3,6 +3,7 @@ package it.mengoni.persistence.dao;
 
 import it.mengoni.exception.LogicError;
 import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 import it.mengoni.persistence.dto.PersistentObject;
 
 import java.io.File;
@@ -53,6 +54,22 @@ public class JdbcHelper {
 			} catch (SQLException e) {
 			}
 		}
+	}
+
+	public DatabaseProductType getDatabaseProductType() {
+		String pn = getDatabaseProductName();
+		if (pn == null)
+			return DatabaseProductType.unknow;
+		pn = pn.toLowerCase();
+		if (pn.contains("firebird"))
+			return DatabaseProductType.firebird;
+		if (pn.contains("postgresql"))
+			return DatabaseProductType.postgresql;
+		if (pn.contains("mysql"))
+			return DatabaseProductType.mysql;
+		if (pn.contains("oracle"))
+			return DatabaseProductType.oracle;
+		return DatabaseProductType.unknow;
 	}
 
 	public Connection getConnection() throws SystemError {
