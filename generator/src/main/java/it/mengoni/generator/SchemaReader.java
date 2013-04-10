@@ -1,5 +1,6 @@
 package it.mengoni.generator;
 
+import it.mengoni.generator.GeneratorConst.DatabaseProductType;
 import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Root;
 import it.mengoni.jdbc.model.Schema;
@@ -30,13 +31,15 @@ public class SchemaReader {
 			System.err.println(e);
 		}
 		if (root.getChildCount()<=0){
-			Catalog cat = new Catalog(root);
+			String pn = meta.getDatabaseProductName();
+			DatabaseProductType databaseProductType = Helper.getDatabaseProductType(pn);
+			Catalog cat = new Catalog(databaseProductType, root);
 			cat.setDbName(config.getCatalogName());
 			Schema schema = new Schema(cat);
 			if (config.getSchemaName() != null)
 				schema.setDbName(config.getSchemaName());
 			TableType tableType = new TableType("TABLE", "table", schema);
-			Helper.dumpTables(meta, tableType, schema);
+			Helper.dumpTables(databaseProductType, meta, tableType, schema);
 		}
 		return root;
 	}

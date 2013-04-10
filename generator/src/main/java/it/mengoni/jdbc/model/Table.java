@@ -1,5 +1,7 @@
 package it.mengoni.jdbc.model;
 
+import it.mengoni.generator.GeneratorConst.DatabaseProductType;
+
 
 
 public class Table extends AbstractSelectableDbItem {
@@ -13,6 +15,7 @@ public class Table extends AbstractSelectableDbItem {
 	private Constraints constraints = new Constraints(this);
 	private Indexes indexes = new Indexes(this);
 	private TableReferences refs = new TableReferences(this);
+	private final DatabaseProductType databaseProductType;
 
 	@Override
 	protected DbItem getChild(int index) {
@@ -31,11 +34,16 @@ public class Table extends AbstractSelectableDbItem {
 		return 5;
 	}
 
-	public Table(String name, String descrizione, TableType parent) {
+	public Table(DatabaseProductType databaseProductType, String name, String descrizione, TableType parent) {
 		super(name, descrizione);
 		this.parent = parent;
+		this.databaseProductType = databaseProductType;
 		if (parent!=null)
 			parent.addTable(this);
+	}
+
+	public DatabaseProductType getDatabaseProductType() {
+		return databaseProductType;
 	}
 
 	public Fields getColumns() {

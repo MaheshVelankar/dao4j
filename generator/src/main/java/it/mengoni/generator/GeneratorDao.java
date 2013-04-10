@@ -91,7 +91,9 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 				}
 				buf.append("}\n");
 				buf.append("public ").append(daoImplName).append("(JdbcHelper jdbcHelper, CharsetConverter charsetConverter)" +
-						" {super(jdbcHelper, charsetConverter, \"").append(ModelFactory.quoteSqlReserved(table.getJavaName())).append("\", fields);}\n");
+						" {super(jdbcHelper, charsetConverter, \"");
+				buf.append(ModelFactory.quoteSqlReserved(table.getJavaName(), table.getDatabaseProductType()));
+				buf.append("\", fields);}\n");
 
 				buf.append("    @Override\n    public ").append(tablename).append(" newIstance() { return new ").append(tablename).append(IMPL_C).append("();	}\n");
 
@@ -155,7 +157,7 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 					buf.append(FieldImpl.class.getSimpleName());
 					buf.append("<").append(tablename).append(", ").append(fieldClassName);
 				}
-				buf.append(">(\"").append(ModelFactory.quoteSqlReserved(c.getDbName())).append("\", ");
+				buf.append(">(\"").append(ModelFactory.quoteSqlReserved(c.getDbName(), c.getParent().getParent().getDatabaseProductType())).append("\", ");
 				buf.append("\"").append(propertyName).append("\", ");
 				if (!c.isPk())
 					buf.append(c.isNullable()).append(", ");

@@ -1,5 +1,6 @@
 package it.mengoni.generator;
 
+import it.mengoni.generator.GeneratorConst.DatabaseProductType;
 import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Constraints;
 import it.mengoni.jdbc.model.Fields;
@@ -49,7 +50,7 @@ public class Helper {
 		fieldTypeMap.put(Types.BOOLEAN, new FieldData("Boolean", "(rs.getBoolean(getName()))")); // 16;
 		fieldTypeMap.put(Types.CHAR, new FieldData("String", "(getStringValue(rs))"));
 		fieldTypeMap.put(Types.DATE, new FieldData("java.sql.Date", "(rs.getDate(getName()))"));
-		fieldTypeMap.put(Types.DECIMAL, new FieldData("BigDecimal", "(rs.getBigDecimal(getName()))"));
+		fieldTypeMap.put(Types.DECIMAL, new FieldData("java.math.BigDecimal", "(rs.getBigDecimal(getName()))"));
 		fieldTypeMap.put(Types.DOUBLE, new FieldData("Double", "(rs.getDouble(getName()))")); // 8;
 		fieldTypeMap.put(Types.FLOAT, new FieldData("Double", "(rs.getDouble(getName()))")); // 6;
 		fieldTypeMap.put(Types.INTEGER, new FieldData("Integer", "getIntegerValue(rs)")); // 4;
@@ -109,16 +110,33 @@ public class Helper {
 
 	public static void dumpCatalog(DatabaseMetaData meta, ResultSet res, Root root) throws SQLException {
 		int c=0;
+		String pn = meta.getDatabaseProductName();
+		DatabaseProductType databaseProductType = Helper.getDatabaseProductType(pn);
 		while (res.next()) {
 			String s = res.getString(1);
 			c++;
-			Catalog catalog = new Catalog(s, "", root);
+			Catalog catalog = new Catalog(databaseProductType, s, "", root);
 			addSchema(meta, catalog);
 		}
 		if (c==0){
-			Catalog catalog = new Catalog(root);
+			Catalog catalog = new Catalog(databaseProductType, root);
 			addSchema(meta, catalog);
 		}
+	}
+
+	public static DatabaseProductType getDatabaseProductType(String pn) {
+		if (pn == null)
+			return DatabaseProductType.unknow;
+		pn = pn.toLowerCase();
+		if (pn.contains("firebird"))
+			return DatabaseProductType.firebird;
+		if (pn.contains("postgresql"))
+			return DatabaseProductType.postgresql;
+		if (pn.contains("mysql"))
+			return DatabaseProductType.mysql;
+		if (pn.contains("oracle"))
+			return DatabaseProductType.oracle;
+		return DatabaseProductType.unknow;
 	}
 
 	public static void addSchema(DatabaseMetaData meta, Catalog catalog) throws SQLException {
@@ -277,14 +295,15 @@ public class Helper {
 
 	public static void addTableTypes(DatabaseMetaData meta, Schema tableSchema) throws SQLException {
 		ResultSet res = meta.getTableTypes();
+		DatabaseProductType pt = getDatabaseProductType(meta.getDatabaseProductName());
 		while (res.next()) {
 			String s = res.getString(1);
 			TableType tableType = new TableType(s, "", tableSchema);
-			dumpTables(meta, tableType, tableSchema);
+			dumpTables(pt, meta, tableType, tableSchema);
 		}
 	}
 
-	public static void dumpTables(DatabaseMetaData meta, TableType tableType, Schema tableSchema) throws SQLException {
+	public static void dumpTables(DatabaseProductType databaseProductType, DatabaseMetaData meta, TableType tableType, Schema tableSchema) throws SQLException {
 		String[] types = new String[]{tableType.getDbName()};
 		String cat = null;
 		String schema = null;
@@ -295,7 +314,7 @@ public class Helper {
 		ResultSet res = meta.getTables(cat, schema, null, types);
 		while (res.next()) {
 			String s = res.getString(3);
-			Table table = new Table(s, "", tableType);
+			Table table = new Table(databaseProductType, s, "", tableType);
 			dumpFields(meta, table, schema);
 			dumpFk(cat, schema, meta, table);
 		}

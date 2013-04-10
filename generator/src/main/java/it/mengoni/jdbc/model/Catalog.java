@@ -1,5 +1,7 @@
 package it.mengoni.jdbc.model;
 
+import it.mengoni.generator.GeneratorConst.DatabaseProductType;
+
 
 
 
@@ -9,17 +11,23 @@ public class Catalog extends AbstractDbItem {
 
 	private transient Root parent;
 	private DbItemList<Schema> children = new DbItemArrayList<Schema>();
+	private final DatabaseProductType databaseProductType;
 
-	public Catalog(String name, String descrizione, Root parent) {
+	public DatabaseProductType getDatabaseProductType() {
+		return databaseProductType;
+	}
+
+	public Catalog(DatabaseProductType databaseProductType, String name, String descrizione, Root parent) {
 		super(name, descrizione);
+		this.databaseProductType = databaseProductType;
 		this.parent = parent;
 		prefix = "Catalog:";
 		if (parent!=null)
 			parent.addCatalog(this);
 	}
 
-	public Catalog(Root parent) {
-		this(DEFAULT_ITEM, "", parent);
+	public Catalog(DatabaseProductType databaseProductType, Root parent) {
+		this(databaseProductType, DEFAULT_ITEM, "", parent);
 	}
 
 	public Schema find(String schemaName) {

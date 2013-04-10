@@ -1,5 +1,7 @@
 package it.mengoni.jdbc.model;
 
+import it.mengoni.generator.GeneratorConst.DatabaseProductType;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -65,7 +67,7 @@ public class ModelFactory {
 		reserved.add("short");
 		reserved.add("while");
 		try {
-			InputStream in = ModelFactory.class.getResourceAsStream("/sql-reserved.txt");
+			InputStream in = ModelFactory.class.getResourceAsStream("/sql-reserved-fb.txt");
 			Scanner scanner = new Scanner(in);
 			try{
 			while(scanner.hasNextLine()){
@@ -82,12 +84,19 @@ public class ModelFactory {
 		}
 	}
 
-	public static String quoteSqlReserved(String dbName) {
+	public static String quoteFBSqlReserved(String dbName) {
 		if (dbName==null)
 			return null;
 		if (sqlReserved.contains(dbName.trim().toLowerCase()))
 				return "\\\""+dbName+"\\\"";
 		return dbName;
+	}
+
+	public static Object quoteSqlReserved(String name,
+			DatabaseProductType databaseProductType) {
+		if (databaseProductType == DatabaseProductType.firebird)
+			return quoteFBSqlReserved(name);
+		return name;
 	}
 
 }

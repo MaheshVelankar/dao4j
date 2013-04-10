@@ -2,6 +2,8 @@ package it.mengoni.generator;
 
 public interface GeneratorConst {
 
+	public enum DatabaseProductType {firebird, postgresql, mysql, oracle, unknow}
+
 	public static final String JAVA_EXT = ".java";
 
 	public static final String DAO_FACTORY = "DaoFactory";
