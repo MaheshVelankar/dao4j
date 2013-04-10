@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public abstract class JavaFileGen extends AbstractFileGenerator {
 		String dir = getFileDirectory(fileName, "/");
 		forceDir(dir, "/");
 		try {
-			FileUtils.writeTextFile(fileName, buf.toString(), false);
+			FileUtils.writeStringToFile(new File(fileName), buf.toString());
 		} catch (IOException e) {
 			logger.error("Errore in scrittura:" + fileName, e);
 			throw new SystemError("Errore in scrittura:" + fileName, e);
