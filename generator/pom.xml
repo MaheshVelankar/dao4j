@@ -31,6 +31,13 @@
 			<artifactId>spring-context</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
+		<!-- dependency> <groupId>it.mengoni.utils</groupId> <artifactId>jalopy</artifactId>
+			<name>jalopy</name> <version>0.0.1-SNAPSHOT</version> </dependency> -->
+		<dependency>
+			<groupId>jalopy</groupId>
+			<artifactId>jalopy</artifactId>
+			<version>1.5rc3</version>
+		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
@@ -116,6 +123,8 @@
 			<artifactId>commons-logging</artifactId>
 			<version>1.1.1</version>
 		</dependency>
+		<!-- <dependency> <groupId>jalopy</groupId> <artifactId>jalopy</artifactId>
+			<version>1.5rc3</version> </dependency> -->
 		<dependency>
 			<groupId>c3p0</groupId>
 			<artifactId>c3p0</artifactId>

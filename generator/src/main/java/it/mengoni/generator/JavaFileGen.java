@@ -11,6 +11,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.hunsicker.jalopy.Jalopy;
+
 public abstract class JavaFileGen extends AbstractFileGenerator {
 
 	private static final Logger logger = LoggerFactory.getLogger(JavaFileGen.class);
@@ -37,8 +39,17 @@ public abstract class JavaFileGen extends AbstractFileGenerator {
 		try {
 			FileUtils.writeStringToFile(new File(fileName), buf.toString());
 		} catch (IOException e) {
-			logger.error("Errore in scrittura:" + fileName, e);
-			throw new SystemError("Errore in scrittura:" + fileName, e);
+			logger.error("Error in writing:" + fileName, e);
+			throw new SystemError("Error in writing:" + fileName, e);
+		}
+		try {
+			Jalopy jalopy = new Jalopy();
+			jalopy.setInput(new File(fileName));
+			jalopy.setOutput(new File(fileName));
+			jalopy.setForce(true);
+			jalopy.format();
+		} catch (Exception e) {
+			logger.error("Error in format:" + fileName, e);
 		}
 	}
 
