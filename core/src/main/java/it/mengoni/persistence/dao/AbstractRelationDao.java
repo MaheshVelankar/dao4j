@@ -229,14 +229,11 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 	}
 
 	public List<T> getByWhere(String where, Object ... params) throws SystemError, LogicError {
-		return getByWhereNew2((String)null, where, null, params);
+		StringBuilder sql = new StringBuilder(getSelectSql(0, 0, null, where));
+		return getList(sql.toString(), params);
 	}
 
 	public List<T> getByWhereOrder(String where, String orderBy, Object ... params) throws SystemError, LogicError {
-		return getByWhereNew2((String)null, where, orderBy, params);
-	}
-
-	public List<T> getByWhereNew2(String where, String orderBy, Object ... params) throws SystemError, LogicError {
 		StringBuilder sql = new StringBuilder(getSelectSql(0, 0, orderBy, where));
 		return getList(sql.toString(), params);
 	}

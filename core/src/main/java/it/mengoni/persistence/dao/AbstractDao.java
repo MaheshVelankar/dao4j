@@ -130,9 +130,6 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 
 	public List<T> getAllOrder(String orderBy) throws SystemError, LogicError {
 		StringBuilder buf = new StringBuilder(getSelectSql(0,0, orderBy));
-//		if (orderBy!=null  && !orderBy.trim().isEmpty()){
-//			buf.append(" order by ").append(orderBy);
-//		}
 		return jdbcHelper.queryForList(buf.toString(), beanCreator);
 	}
 
@@ -140,7 +137,7 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 		if (page>0 && pageSize>0){
 			StringBuilder preselect = new StringBuilder(" ");
 			if (databaseProductType==DatabaseProductType.firebird){
-				preselect.append("first " + pageSize).append(" ");
+				preselect.append("first ").append(pageSize).append(" ");
 				if (page>1)
 					preselect.append("skip ").append((page-1)*pageSize).append(" ");
 			}
@@ -149,9 +146,18 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 
 SELECT column FROM table
 LIMIT 10 OFFSET 10*/
-				preselect.append("LIMIT " + pageSize).append(" ");
+				preselect.append("LIMIT ").append(pageSize).append(" ");
 //				if (page>1)
 					preselect.append("OFFSET ").append((page-1)*pageSize).append(" ");
+			}
+			if (databaseProductType==DatabaseProductType.mysql){
+				/*
+				 * With two arguments, the first argument specifies the offset of the first row to return,
+				 * and the second specifies the maximum number of rows to return.
+				 * The offset of the initial row is 0 (not 1):
+SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
+*/
+				preselect.append("LIMIT ").append((page-1)*pageSize).append(", ").append(pageSize);
 			}
 			return preselect.toString();
 		}
@@ -310,10 +316,6 @@ LIMIT 10 OFFSET 10*/
 			Collection<Condition> conditions) throws LogicError {
 		return getListForInner(page, pageSize, orderBy, conditions.toArray(new Condition[0]));
 	}
-
-//	public List<T> getListFor(String preselect, Collection<Condition> conditions) throws LogicError {
-//		return getListForInner(preselect, null, conditions.toArray(new Condition[0]));
-//	}
 
 	public List<T> getListFor(Collection<Condition> conditions) throws LogicError {
 		return getListForInner(0,0, null, conditions.toArray(new Condition[0]));
