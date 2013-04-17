@@ -1,6 +1,6 @@
 package it.mengoni.jdbc.model;
 
-import it.mengoni.generator.GeneratorConst.DatabaseProductType;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 
 
 

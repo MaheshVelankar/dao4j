@@ -1,17 +1,18 @@
 package it.mengoni.generator.gui.forms;
 
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
 import java.awt.BorderLayout;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Dimension;
-
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
-
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
 
 public class MainForm extends JPanel {
 	/**
@@ -24,6 +25,8 @@ public class MainForm extends JPanel {
 	JButton m_btnCodeOptions = new JButton();
 	JButton m_btnReadMetaData = new JButton();
 	JButton m_btnGenerateCode = new JButton();
+	JButton m_btnSaveSchema = new JButton();
+	JButton m_btnLoadSchema = new JButton();
 	JPanel m_gridView = new JPanel();
 
 	/**
@@ -31,6 +34,23 @@ public class MainForm extends JPanel {
 	 */
 	public MainForm() {
 		initializePanel();
+	}
+
+	/**
+	 * Main method for panel
+	 */
+	public static void main(String[] args) {
+		JFrame frame = new JFrame();
+		frame.setSize(600, 400);
+		frame.setLocation(100, 100);
+		frame.getContentPane().add(new MainForm());
+		frame.setVisible(true);
+
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent evt) {
+				System.exit(0);
+			}
+		});
 	}
 
 	/**
@@ -106,24 +126,32 @@ public class MainForm extends JPanel {
 	 *            the component orientation to be applied
 	 */
 	public void applyComponentOrientation(ComponentOrientation orientation) {
+		// Not yet implemented...
+		// I18NUtils.applyComponentOrientation(this, orientation);
 		super.applyComponentOrientation(orientation);
 	}
 
 	public JPanel createPanel() {
 		JPanel jpanel1 = new JPanel();
-		FormLayout formlayout1 = new FormLayout("FILL:4DLU:NONE,FILL:DEFAULT:GROW(1.0),FILL:4DLU:NONE", "CENTER:2DLU:NONE,CENTER:DEFAULT:NONE,CENTER:2DLU:NONE,CENTER:DEFAULT:GROW(1.0),CENTER:2DLU:NONE,CENTER:DEFAULT:NONE");
+		FormLayout formlayout1 = new FormLayout(
+				"FILL:4DLU:NONE,FILL:DEFAULT:GROW(1.0),FILL:4DLU:NONE",
+				"CENTER:2DLU:NONE,CENTER:DEFAULT:NONE,CENTER:2DLU:NONE,CENTER:DEFAULT:GROW(1.0),CENTER:2DLU:NONE,CENTER:DEFAULT:NONE");
 		CellConstraints cc = new CellConstraints();
 		jpanel1.setLayout(formlayout1);
 
 		jpanel1.add(createPanel1(), cc.xy(2, 2));
-		jpanel1.add(creategridView(), new CellConstraints(2, 4, 1, 1, CellConstraints.FILL, CellConstraints.FILL));
-		addFillComponents(jpanel1, new int[] { 1, 2, 3 }, new int[] { 1, 2, 3, 4, 5, 6 });
+		jpanel1.add(creategridView(), new CellConstraints(2, 4, 1, 1,
+				CellConstraints.FILL, CellConstraints.FILL));
+		addFillComponents(jpanel1, new int[] { 1, 2, 3 }, new int[] { 1, 2, 3,
+				4, 5, 6 });
 		return jpanel1;
 	}
 
 	public JPanel createPanel1() {
 		JPanel jpanel1 = new JPanel();
-		FormLayout formlayout1 = new FormLayout("FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE", "CENTER:DEFAULT:NONE");
+		FormLayout formlayout1 = new FormLayout(
+				"FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE,FILL:4DLU:NONE,FILL:DEFAULT:NONE",
+				"CENTER:DEFAULT:NONE");
 		CellConstraints cc = new CellConstraints();
 		jpanel1.setLayout(formlayout1);
 
@@ -157,13 +185,26 @@ public class MainForm extends JPanel {
 		m_btnGenerateCode.setText("Generate");
 		jpanel1.add(m_btnGenerateCode, cc.xy(11, 1));
 
-		addFillComponents(jpanel1, new int[] { 2, 4, 6, 8, 10 }, new int[0]);
+		m_btnSaveSchema.setActionCommand("Save schema");
+		m_btnSaveSchema.setName("btnSaveSchema");
+		m_btnSaveSchema.setText("Save schema");
+		jpanel1.add(m_btnSaveSchema, cc.xy(13, 1));
+
+		m_btnLoadSchema.setActionCommand("Load Schema");
+		m_btnLoadSchema.setName("btnSaveSchema");
+		m_btnLoadSchema.setText("Load Schema");
+		jpanel1.add(m_btnLoadSchema, cc.xy(15, 1));
+
+		addFillComponents(jpanel1, new int[] { 2, 4, 6, 8, 10, 12, 14 },
+				new int[0]);
 		return jpanel1;
 	}
 
 	public JPanel creategridView() {
 		m_gridView.setName("gridView");
-		FormLayout formlayout1 = new FormLayout("FILL:DEFAULT:NONE", "CENTER:DEFAULT:NONE");
+		FormLayout formlayout1 = new FormLayout("FILL:DEFAULT:NONE",
+				"CENTER:DEFAULT:NONE");
+		CellConstraints cc = new CellConstraints();
 		m_gridView.setLayout(formlayout1);
 
 		addFillComponents(m_gridView, new int[] { 1 }, new int[] { 1 });

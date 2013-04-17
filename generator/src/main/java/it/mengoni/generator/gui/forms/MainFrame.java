@@ -7,8 +7,10 @@ import it.mengoni.generator.Helper;
 import it.mengoni.generator.Project;
 import it.mengoni.generator.SchemaReader;
 import it.mengoni.generator.gui.DbNode;
+import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Root;
 import it.mengoni.jdbc.model.Schema;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
@@ -123,6 +125,8 @@ public class MainFrame extends JFrame {
 		mainForm.m_btnCodeOptions.setAction(new SetCodeGenerationAction(this));
 		mainForm.m_btnGenerateCode.setAction(new RunCodeGenerationAction(this));
 		mainForm.m_btnReadMetaData.setAction(new ReadMetadataAction(this));
+		mainForm.m_btnSaveSchema.setAction(new SaveSchemaAction(this));
+		mainForm.m_btnLoadSchema.setAction(new OpenSchemaAction(this));
 
 		setVisible(true);
 		addWindowListener(new WindowAdapter() {
@@ -323,6 +327,67 @@ public class MainFrame extends JFrame {
 			File file = chooser.getSelectedFile();
 			if (file!=null){
 				Project.save(_project, file);
+			}
+		}
+	};
+
+	public class SaveSchemaAction extends AbstractAction {
+		private static final long serialVersionUID = 1L;
+		JFileChooser chooser;
+		JFrame frame;
+
+		SaveSchemaAction(JFrame frame) {
+			super("Save Schema");
+			this.chooser = new JFileChooser();
+			chooser.setFileFilter(filter);
+			this.frame = frame;
+		}
+
+		public void actionPerformed(ActionEvent evt) {
+			chooser.showSaveDialog(frame);
+			File file = chooser.getSelectedFile();
+			if (file!=null){
+				CodeGenConfig conf = _project.getCodeGenConfig();
+				if (conf!=null && conf.getCatalogName()!=null && conf.getSchemaName()!=null){
+					Schema schema = _project.getModel().getSchema(conf.getCatalogName(), conf.getSchemaName());
+					if (schema!=null)
+						Project.saveSchema(schema, file);
+				}else
+					Project.saveDbRoot(_project.getModel(), file);
+			}
+		}
+	};
+
+	public class OpenSchemaAction extends AbstractAction {
+		private static final long serialVersionUID = 1L;
+		JFrame frame;
+		JFileChooser chooser;
+
+		OpenSchemaAction(JFrame frame) {
+			super("Open Schema");
+			this.chooser = new JFileChooser();
+			chooser.setFileFilter(filter);
+			this.frame = frame;
+		}
+
+		public void actionPerformed(ActionEvent evt) {
+			chooser.showOpenDialog(frame);
+			File file = chooser.getSelectedFile();
+			if (file!=null){
+				try {
+					frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+					Schema schema = Project.loadSchema(file);
+					dbRoot = new Root();
+					Catalog catalog = new Catalog(DatabaseProductType.unknow, dbRoot);
+					dbRoot.addCatalog(catalog);
+					catalog.addSchema(schema);
+					_project.setModel(dbRoot);
+					DbNode rootNode = new DbNode(dbRoot);
+					TreeModel newModel = new DefaultTreeModel(rootNode, true);
+					schemaTree.setModel(newModel);
+				} finally {
+					frame.setCursor(Cursor.getDefaultCursor());
+				}
 			}
 		}
 	};

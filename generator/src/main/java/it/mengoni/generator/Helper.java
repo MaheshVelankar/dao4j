@@ -1,6 +1,5 @@
 package it.mengoni.generator;
 
-import it.mengoni.generator.GeneratorConst.DatabaseProductType;
 import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Constraints;
 import it.mengoni.jdbc.model.Fields;
@@ -20,6 +19,7 @@ import it.mengoni.jdbc.model.Table;
 import it.mengoni.jdbc.model.TableColunm;
 import it.mengoni.jdbc.model.TableReference;
 import it.mengoni.jdbc.model.TableType;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;

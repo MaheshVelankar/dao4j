@@ -1,10 +1,10 @@
 package it.mengoni.generator;
 
-import it.mengoni.generator.GeneratorConst.DatabaseProductType;
 import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Root;
 import it.mengoni.jdbc.model.Schema;
 import it.mengoni.jdbc.model.TableType;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 
 import java.io.IOException;
 import java.sql.Connection;

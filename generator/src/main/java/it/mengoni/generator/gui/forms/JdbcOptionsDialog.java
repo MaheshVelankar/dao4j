@@ -41,7 +41,7 @@ public class JdbcOptionsDialog extends JDialog {
 		this.jdbcConfig = jdbcConfig;
 		form = new JdbcOptionsForm();
 		getContentPane().add(form, BorderLayout.CENTER);
-		setSize(500, 240);
+		setSize(550, 240);
 		form.m_textDriverClass.setText(jdbcConfig.getDriverClass());
 		form.m_textJdbcUrl.setText(jdbcConfig.getJdbcUrl());
 		form.m_textPassword.setText(jdbcConfig.getPassword());
@@ -49,6 +49,7 @@ public class JdbcOptionsDialog extends JDialog {
 		form.m_btnCancel.addActionListener(closeListener);
 		form.m_btnOk.addActionListener(saveListener);
 		form.m_btnTest.addActionListener(testListener);
+		pack();
 		setVisible(true);
 	}
 

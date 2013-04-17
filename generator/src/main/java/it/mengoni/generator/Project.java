@@ -2,6 +2,7 @@ package it.mengoni.generator;
 
 import it.mengoni.exception.SystemError;
 import it.mengoni.jdbc.model.Root;
+import it.mengoni.jdbc.model.Schema;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -113,6 +114,52 @@ public class Project implements Serializable  {
 		xStream.alias("tableReferences", it.mengoni.jdbc.model.TableReferences.class);
 //		xStream.addImplicitCollection(it.mengoni.jdbc.model.DbItemArrayList.class, "children");
 		return xStream;
+	}
+
+	public static void saveDbRoot(Root root, File file) {
+		try {
+			XStream xStream = getXStream();
+			OutputStream out = new FileOutputStream(file);
+			xStream.toXML(root, out);
+		} catch (Throwable e) {
+			logger.error("Errore in scrittura nel file: " +file.getPath() + ", errore:" + e, e);
+		}
+
+	}
+
+	public static void saveSchema(Schema schema, File file) {
+		try {
+			XStream xStream = getXStream();
+			OutputStream out = new FileOutputStream(file);
+			xStream.toXML(schema, out);
+		} catch (Throwable e) {
+			logger.error("Errore in scrittura nel file: " +file.getPath() + ", errore:" + e, e);
+		}
+
+	}
+
+	public static Project loadDbRoot(Project _project, File file) {
+		if (_project==null)
+			_project = new Project();
+		try {
+			XStream xStream = getXStream();
+			InputStream input = new FileInputStream(file);
+			Root root = (Root) xStream.fromXML(input);
+			_project.setModel(root);
+		} catch (Throwable e) {
+			throw new SystemError("Errore in lettura nel file: " +file.getPath(),e);
+		}
+		return _project;
+	}
+
+	public static Schema loadSchema(File file) {
+		try {
+			XStream xStream = getXStream();
+			InputStream input = new FileInputStream(file);
+			return (Schema) xStream.fromXML(input);
+		} catch (Throwable e) {
+			throw new SystemError("Errore in lettura nel file: " +file.getPath(),e);
+		}
 	}
 
 }

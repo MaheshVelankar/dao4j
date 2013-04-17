@@ -38,13 +38,14 @@ public class CodeGenOptionsDialog extends JDialog {
 		this.codeGenConfig = codeGenConfig;
 		form = new CodeGenOptionsForm();
 		getContentPane().add(form, BorderLayout.CENTER);
-		setSize(500, 240);
+		setSize(550, 240);
 		form.m_textRootOut.setText(codeGenConfig.getRootOut());
 		form.m_textPackage.setText(codeGenConfig.getBasePackage());
 		form.m_textCatalog.setText(codeGenConfig.getCatalogName());
 		form.m_textSchema.setText(codeGenConfig.getSchemaName());
 		form.m_btnCancel.addActionListener(closeListener);
 		form.m_btnOk.addActionListener(saveListener);
+		pack();
 		setVisible(true);
 	}
 
