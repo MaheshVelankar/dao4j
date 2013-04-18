@@ -19,6 +19,7 @@ import org.javatuples.Unit;
 
 public abstract class PoProperty<T extends PersistentObject> implements Serializable {
 
+
 	/**
 	 *
 	 */
@@ -39,6 +40,10 @@ public abstract class PoProperty<T extends PersistentObject> implements Serializ
 			value = resolve(dao, keys);
 			setResolved();
 		}
+		return value;
+	}
+
+	public T getValue() {
 		return value;
 	}
 
