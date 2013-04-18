@@ -41,6 +41,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 	private String pkSql;
 	private String updateSql;
 	private String countSql;
+	private String whereSql;
 
 	@Override
 	public int insert(T bean) throws SystemError, LogicError {
@@ -424,7 +425,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 	protected String getSelectSql(int page, int pageSize, String orderBy,
 			String where){
 		String preselect = calcPreselect(page, pageSize);
-		if (selectSql==null || (preselect!=null && !preselect.isEmpty())){
+		if (selectSql==null || (preselect!=null && !preselect.isEmpty()) || whereChanged(where)){
 			List<FieldJoin<T, ?>> joinList = new ArrayList<FieldJoin<T, ?>>();
 			StringBuilder ret = new StringBuilder("select ");
 			if (databaseProductType==DatabaseProductType.firebird && preselect!=null && !preselect.isEmpty())
@@ -457,6 +458,13 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			selectSql = ret.toString();
 		}
 		return selectSql;
+
+	};
+
+	private boolean whereChanged(String where) {
+		if (where==null && whereSql==null)
+			return false;
+		return !where.equals(whereSql);
 	};
 
 }
