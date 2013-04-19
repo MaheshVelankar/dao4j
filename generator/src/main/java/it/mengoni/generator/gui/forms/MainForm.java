@@ -204,7 +204,6 @@ public class MainForm extends JPanel {
 		m_gridView.setName("gridView");
 		FormLayout formlayout1 = new FormLayout("FILL:DEFAULT:NONE",
 				"CENTER:DEFAULT:NONE");
-		CellConstraints cc = new CellConstraints();
 		m_gridView.setLayout(formlayout1);
 
 		addFillComponents(m_gridView, new int[] { 1 }, new int[] { 1 });
