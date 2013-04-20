@@ -22,6 +22,11 @@
 	</properties>
 	<dependencies>
 		<dependency>
+			<groupId>it.mengoni</groupId>
+			<artifactId>dao4jCore</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
 			<version>${spring.version}</version>
@@ -31,8 +36,6 @@
 			<artifactId>spring-context</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
-		<!-- dependency> <groupId>it.mengoni.utils</groupId> <artifactId>jalopy</artifactId>
-			<name>jalopy</name> <version>0.0.1-SNAPSHOT</version> </dependency> -->
 		<dependency>
 			<groupId>jalopy</groupId>
 			<artifactId>jalopy</artifactId>
@@ -47,13 +50,6 @@
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>9.1-901.jdbc4</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>it.mengoni</groupId>
-			<artifactId>dao4jCore</artifactId>
-			<version>1.0-SNAPSHOT</version>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.thoughtworks.xstream</groupId>
