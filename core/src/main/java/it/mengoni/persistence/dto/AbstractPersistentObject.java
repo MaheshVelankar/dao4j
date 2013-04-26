@@ -8,8 +8,9 @@ import org.javatuples.Tuple;
 public abstract class AbstractPersistentObject implements PersistentObject {
 
 	private static final long serialVersionUID = 1L;
-	private boolean saved = false;
-	private boolean deleted = false;
+	private transient boolean saved = false;
+	private transient boolean deleted = false;
+	private transient boolean edit = false;
 
 	protected Tuple key = null;
 
@@ -36,6 +37,14 @@ public abstract class AbstractPersistentObject implements PersistentObject {
 
 	public boolean isDeleted() {
 		return deleted;
+	}
+
+	public boolean isEdit() {
+		return edit;
+	}
+
+	public void setEdit(boolean edit) {
+		this.edit = edit;
 	}
 
 	public boolean isKeyAssigned() {

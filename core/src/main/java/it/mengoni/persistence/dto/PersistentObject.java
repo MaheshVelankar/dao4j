@@ -16,6 +16,10 @@ public interface PersistentObject extends Serializable{
 
 	public boolean isKeyAssigned();
 
+	public boolean isEdit();
+
+	public void setEdit(boolean edit);
+
 	public Tuple getKey();
 
 	public String getDisplayLabel();
@@ -58,6 +62,15 @@ public interface PersistentObject extends Serializable{
 		@Override
 		public boolean isKeyAssigned() {
 			return true;
+		}
+
+		@Override
+		public boolean isEdit() {
+			return false;
+		}
+
+		@Override
+		public void setEdit(boolean edit) {
 		}
 	};
 }
