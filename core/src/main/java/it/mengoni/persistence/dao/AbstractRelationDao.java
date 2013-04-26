@@ -35,13 +35,12 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 	protected final List<Field<T, ?>> fields;
 	protected final Map<String,Field<T, ?>> fieldMap;
 	protected final Map<String,Field<T, ?>> propertyMap;
-	private String selectSql;
 	private String insertSql;
 	private String deleteSql;
 	private String pkSql;
 	private String updateSql;
 	private String countSql;
-	private String whereSql;
+	private String innerSelectSql;
 
 	@Override
 	public int insert(T bean) throws SystemError, LogicError {
@@ -421,20 +420,16 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		return getSelectSql(page, pageSize, orderBy, null);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected String getSelectSql(int page, int pageSize, String orderBy,
-			String where){
-		String preselect = calcPreselect(page, pageSize);
-		if (selectSql==null || (preselect!=null && !preselect.isEmpty()) || whereChanged(where)){
+	protected void calcInnerSelect(StringBuilder select){
+		if (innerSelectSql==null){
+			StringBuilder ret = new StringBuilder();
 			List<FieldJoin<T, ?>> joinList = new ArrayList<FieldJoin<T, ?>>();
-			StringBuilder ret = new StringBuilder("select ");
-			if (databaseProductType==DatabaseProductType.firebird && preselect!=null && !preselect.isEmpty())
-				ret.append(preselect).append(" ");
 			for (int i = 0; i < fields.size(); i++) {
 				Field<T, ?> field = fields.get(i);
 				if (i>0)
 					ret.append("\n, ");
 				if (field instanceof FieldJoinImpl){
+					@SuppressWarnings({ "unchecked", "rawtypes" })
 					FieldJoin<T, ?> fieldJoin = (FieldJoinImpl) field;
 					ret.append(fieldJoin.getFieldSql());
 					joinList.add(fieldJoin);
@@ -449,22 +444,29 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			for(String join:joinset){
 				ret.append(join).append("\n");
 			}
-			_appendWhere(ret, where);
-			if (orderBy!=null && !orderBy.trim().isEmpty()){
-				ret.append(" order by ").append(orderBy);
-			}
-			if (databaseProductType==DatabaseProductType.postgresql && preselect!=null && !preselect.isEmpty())
-				ret.append(preselect).append(" ");
-			selectSql = ret.toString();
+			innerSelectSql = ret.toString();
 		}
-		return selectSql;
+		select.append(innerSelectSql);
+	}
 
-	};
+	protected String getSelectSql(int page, int pageSize, String orderBy,
+			String where){
+		boolean havePaging = (page>0 && pageSize>0);
+		String preselect = "";
+		if (havePaging)
+			preselect = calcPreselect(page, pageSize);
+		StringBuilder ret = new StringBuilder("select ");
+		if (havePaging && databaseProductType==DatabaseProductType.firebird)
+			ret.append(preselect).append(" ");
+		calcInnerSelect(ret);
+		_appendWhere(ret, where);
+		if (orderBy!=null && !orderBy.trim().isEmpty()){
+			ret.append(" order by ").append(orderBy);
+		}
+		if (havePaging && databaseProductType==DatabaseProductType.postgresql )
+			ret.append(preselect).append(" ");
+		return ret.toString();
 
-	private boolean whereChanged(String where) {
-		if (where==null && whereSql==null)
-			return false;
-		return !where.equals(whereSql);
 	};
 
 }
