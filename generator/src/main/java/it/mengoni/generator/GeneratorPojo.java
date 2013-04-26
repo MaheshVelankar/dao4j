@@ -182,7 +182,7 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 						buf.append("}\n");
 						buf.append("public void setTo").append(pkTypeName).append("(").append(pkTypeName).append(" to").append(pkTypeName).append("){\n");
 						buf.append("    this.to").append(pkTypeName).append(".setValue(to").append(pkTypeName).append(");\n");
-						buf.append("  this.").append(fkPropParam).append(" = this.to").append(pkTypeName).append("==null?null:to").append(pkTypeName).append(".get").append(Helper.toCamel(fk.getFkcolumnName(), true)).append("();\n");
+						buf.append("  this.").append(fkPropParam).append(" = this.to").append(pkTypeName).append("==null?null:to").append(pkTypeName).append(".get").append(Helper.toCamel(fk.getPkcolumnName(), true)).append("();\n");
 
 						buf.append("}\n");
 					}

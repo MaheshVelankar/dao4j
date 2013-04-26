@@ -1,19 +1,27 @@
 package it.mengoni.generator;
 
+import it.mengoni.jdbc.model.DbItem;
 import it.mengoni.jdbc.model.ModelFactory;
+import it.mengoni.jdbc.model.Pk;
+import it.mengoni.jdbc.model.PkColumn;
+import it.mengoni.jdbc.model.Schema;
 import it.mengoni.jdbc.model.Table;
 import it.mengoni.jdbc.model.TableColunm;
+import it.mengoni.jdbc.model.TableType;
 import it.mengoni.persistence.dao.AbstractRelationDao;
 import it.mengoni.persistence.dao.CharsetConverter;
 import it.mengoni.persistence.dao.Dao;
+import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 import it.mengoni.persistence.dao.DateField;
 import it.mengoni.persistence.dao.FieldImpl;
 import it.mengoni.persistence.dao.IntegerField;
 import it.mengoni.persistence.dao.JdbcHelper;
+import it.mengoni.persistence.dao.KeyGenerator;
 import it.mengoni.persistence.dao.PkFieldImpl;
 import it.mengoni.persistence.dao.PkIntegerField;
 import it.mengoni.persistence.dao.PkShortField;
 import it.mengoni.persistence.dao.PkStringField;
+import it.mengoni.persistence.dao.PostgresqlSequenceReader;
 import it.mengoni.persistence.dao.ShortField;
 import it.mengoni.persistence.dao.StringField;
 import it.mengoni.persistence.dao.TimeField;
@@ -21,6 +29,7 @@ import it.mengoni.persistence.dao.TimestampField;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -41,7 +50,7 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 
 	public void genDaoImpl(final Table table) throws IOException {
 		final String tablename = Helper.toCamel(table.getJavaName());
-		final String daoName = tablename + DAO_C;
+//		final String daoName = tablename + DAO_C;
 		final String daoImplName = tablename + DAO_C + IMPL_C ;
 		String fileName = daoImplName + JAVA_EXT;
 		String filePackage = concatPackage(basePackage,DAO_P,IMPL_P);
@@ -68,7 +77,8 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 
 				String tupleType = kd.tupleClass.getSimpleName();
 				importSet.add(kd.tupleClass.getName());
-				importSet.add(concatPackage(basePackage,DAO_P,tablename+DAO_C));
+				String daoName = tablename + DAO_C;
+				importSet.add(concatPackage(basePackage,DAO_P,daoName));
 
 				String s = String.format("public class %s extends AbstractRelationDao<%s> implements %s {\n", daoImplName, tablename, daoName);
 				buf.append(s);
@@ -93,7 +103,41 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 				buf.append("public ").append(daoImplName).append("(JdbcHelper jdbcHelper, CharsetConverter charsetConverter)" +
 						" {super(jdbcHelper, charsetConverter, \"");
 				buf.append(ModelFactory.quoteSqlReserved(table.getJavaName(), table.getDatabaseProductType()));
-				buf.append("\", fields);}\n");
+				buf.append("\", fields);");
+				if (isOneFieldPkWithSequence(table)){
+					if (table.getDatabaseProductType()==DatabaseProductType.postgresql){
+/*
+       setKeyGenerator(new KeyGenerator<Richiesta>() {
+
+        	PostgresqlSequenceReader gen = new PostgresqlSequenceReader("id_richiesta");
+
+			@Override
+			public Tuple newKey(Richiesta bean, String[] keyNames) throws SystemError,LogicError {
+				Integer id = gen.readSequence(RichiestaDaoImpl.this.jdbcHelper).intValue();
+				bean.setIdRichiesta(id);
+				return RichiestaDaoImpl.this.newKey(id);
+			}
+		});
+  */
+						importSet.add(KeyGenerator.class.getName());
+						importSet.add(PostgresqlSequenceReader.class.getName());
+						buf.append("setKeyGenerator(new KeyGenerator<").append(tablename).append(">() {\n");
+						String pkFieldName = getPkFieldName(table);
+						buf.append("PostgresqlSequenceReader gen = new PostgresqlSequenceReader(\"").append(pkFieldName).append("\");\n");
+						buf.append("	@Override\n");
+						buf.append("	public Tuple newKey(").append(tablename).append(" bean, String[] keyNames) {\n");
+						buf.append("		Integer id = gen.readSequence(").append(daoImplName).append(".this.jdbcHelper).intValue();\n");
+						buf.append("		bean.set").append(Helper.toCamel(pkFieldName)).append("(id);\n");
+						buf.append("		return ").append(daoImplName).append(".this.newKey(id);\n");
+						buf.append("	}\n");
+						buf.append("});\n");
+
+					}else if (table.getDatabaseProductType()==DatabaseProductType.firebird){
+
+					}
+
+				}
+				buf.append("}\n");
 
 				buf.append("    @Override\n    public ").append(tablename).append(" newIstance() { return new ").append(tablename).append(IMPL_C).append("();	}\n");
 
@@ -167,6 +211,33 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 		};
 		gen.createFile();
 
+	}
+
+
+	protected String getPkFieldName(Table table) {
+		return table.getConstraints().getPk().getColumns().get(0).getDbName();
+	}
+
+
+	protected boolean isOneFieldPkWithSequence(Table table) {
+		if (table.getConstraints()==null)
+			return false;
+		if (table.getConstraints().getPk()==null)
+			return false;
+		Pk pk = table.getConstraints().getPk();
+		if (pk.getChildCount()==1){
+			PkColumn pkf = pk.getColumns().get(0);
+			Schema schema = table.getParent().getParent();
+			TableType sequence = schema.find("SEQUENCE");
+			Iterator<DbItem> it = sequence.getChildIterator();
+			while(it.hasNext()){
+				DbItem obj = it.next();
+				if (obj.getDbName().equals(pkf.getDbName()))
+					return true;
+			}
+
+		}
+		return false;
 	}
 
 
