@@ -181,6 +181,7 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 		if (bean==null)
 			throw new IllegalArgumentException("bean is null" + getDaoLabel());
 		checkKey(bean);
+		bean.beforeSave();
 		int res;
 		res = jdbcHelper.updateObject(getInsertSql(), beanSqlSetter, bean);
 		if (res==1)
@@ -244,6 +245,7 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 		if (bean==null)
 			throw new IllegalArgumentException("bean is null" + getDaoLabel());
 		checkKey(bean);
+		bean.beforeSave();
 		int res = jdbcHelper.updateObject(getUpdateSql(), beanUpdateSetter, bean);
 		if (res==1)
 			bean.saved();

@@ -24,6 +24,8 @@ public interface PersistentObject extends Serializable{
 
 	public String getDisplayLabel();
 
+	public void beforeSave();
+
 	public PersistentObject NULL_OBJECT = new PersistentObject() {
 
 		/**
@@ -71,6 +73,12 @@ public interface PersistentObject extends Serializable{
 
 		@Override
 		public void setEdit(boolean edit) {
+		}
+
+		@Override
+		public void beforeSave() {
+			// TODO Auto-generated method stub
+
 		}
 	};
 }

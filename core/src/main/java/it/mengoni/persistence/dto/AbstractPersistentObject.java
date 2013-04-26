@@ -24,6 +24,10 @@ public abstract class AbstractPersistentObject implements PersistentObject {
 		key = newKey();
 	}
 
+	public void beforeSave(){
+		//nothing to do, for now
+	}
+
 	protected abstract Tuple newKey();
 
 	protected void updateKey() {
