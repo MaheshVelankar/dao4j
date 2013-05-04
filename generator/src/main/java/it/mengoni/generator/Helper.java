@@ -233,10 +233,10 @@ public class Helper {
 			boolean nullable = res.getInt("NULLABLE")>0;
 			int p = 0;
 			if (haveColumnSize)
-			try{
-				p = res.getInt("COLUMN_SIZE");
-			}catch(Exception e){
-			}
+				try{
+					p = res.getInt("COLUMN_SIZE");
+				}catch(Exception e){
+				}
 			//			new ProcedureColumn(res.getString(4), res.getInt("DATA_TYPE"),
 			//			getProcColType(res.getInt(5)) + " " + getProcSqlColTypeExpr(res),
 			//			procedure, nullable, p);
@@ -298,8 +298,10 @@ public class Helper {
 		DatabaseProductType pt = getDatabaseProductType(meta.getDatabaseProductName());
 		while (res.next()) {
 			String s = res.getString(1);
-			TableType tableType = new TableType(s, "", tableSchema);
-			dumpTables(pt, meta, tableType, tableSchema);
+			if(!s.toLowerCase().startsWith("system") && !s.toLowerCase().contains("temporary")){
+				TableType tableType = new TableType(s, "", tableSchema);
+				dumpTables(pt, meta, tableType, tableSchema);
+			}
 		}
 	}
 
@@ -378,10 +380,10 @@ public class Helper {
 			boolean nullable = res.getInt("NULLABLE")>0;
 			Integer p = 0;
 			if (haveColumnSize)
-			try{
-				p = res.getInt("COLUMN_SIZE");
-			}catch(Exception e){
-			}
+				try{
+					p = res.getInt("COLUMN_SIZE");
+				}catch(Exception e){
+				}
 			new TableColunm(s, res.getString("TYPE_NAME"), res.getInt("DATA_TYPE"), nullable, p, cols);
 		}
 
