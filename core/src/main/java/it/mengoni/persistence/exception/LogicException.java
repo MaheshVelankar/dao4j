@@ -1,4 +1,4 @@
-package it.mengoni.exception;
+package it.mengoni.persistence.exception;
 
 
 public class LogicException extends Exception {

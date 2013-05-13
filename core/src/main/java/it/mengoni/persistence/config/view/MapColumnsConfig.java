@@ -1,8 +1,8 @@
-package it.mengoni.config.view;
+package it.mengoni.persistence.config.view;
 
-import it.mengoni.db.EditItemValue;
 import it.mengoni.persistence.dao.Field;
 import it.mengoni.persistence.dao.FieldJoin;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.filter.ListProvider;
 
 import java.math.BigDecimal;
@@ -100,7 +100,7 @@ public class MapColumnsConfig extends LinkedHashMap<String, ColumnConfig>{
 		ret.setFilterEnabled(filterEnabled);
 		ret.setLabel(label);
 		ret.setVisible(visible);
-		ret.setJavaClass(getJavaClass(def.getSqlType()));
+		ret.setJavaClass(def.getValueClass());
 		ret.setPropertyName(propertyName);
 		ret.setJoin(true);
 		ret.setJoinKeyFieldName(def.getJoinKeyField());
@@ -122,12 +122,12 @@ public class MapColumnsConfig extends LinkedHashMap<String, ColumnConfig>{
 		if (def instanceof FieldJoin<?,?>)
 			return addConfig((FieldJoin<?,?>)def, propertyName, label, filterEnabled, visible, colWidth, align);
 		ColumnConfig ret = new ColumnConfig();
-		ret.setAlign(getAlign(def.getSqlType(), align));
+		ret.setAlign(align);
 		ret.setFieldName(def.getName());
 		ret.setFilterEnabled(filterEnabled);
 		ret.setLabel(label);
 		ret.setVisible(visible);
-		ret.setJavaClass(getJavaClass(def.getSqlType()));
+		ret.setJavaClass(def.getValueClass());
 		ret.setPropertyName(propertyName);
 		ret.setTableName(tableName);
 		ret.setEditItemValues(def.getEditItemValues());

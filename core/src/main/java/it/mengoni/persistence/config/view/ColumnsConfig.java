@@ -1,4 +1,4 @@
-package it.mengoni.config.view;
+package it.mengoni.persistence.config.view;
 
 import it.mengoni.persistence.filter.ListProvider;
 

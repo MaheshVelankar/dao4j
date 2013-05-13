@@ -1,6 +1,6 @@
-package it.mengoni.config.view;
+package it.mengoni.persistence.config.view;
 
-import it.mengoni.db.EditItemValue;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.filter.ListProvider;
 
 import java.util.HashSet;

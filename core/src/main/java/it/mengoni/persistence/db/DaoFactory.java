@@ -1,4 +1,4 @@
-package it.mengoni.db;
+package it.mengoni.persistence.db;
 
 import java.sql.Connection;
 

@@ -28,6 +28,14 @@ public abstract class AbstractPersistentObject implements PersistentObject {
 		//nothing to do, for now
 	}
 
+	public void beforeDelete(){
+		//nothing to do, for now
+	}
+
+	public void beforeInsert(){
+		//nothing to do, for now
+	}
+
 	protected abstract Tuple newKey();
 
 	protected void updateKey() {
@@ -80,6 +88,10 @@ public abstract class AbstractPersistentObject implements PersistentObject {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() +"->"+ getKey() + " " + getDisplayLabel();
+	}
+
+	public void setKey(Tuple key) {
+		this.key = key;
 	}
 
 

@@ -1,10 +1,9 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.EditItemValue;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Set;
@@ -13,7 +12,7 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 
 	@Override
 	public String toString() {
-		return "AbstractField [name=" + name + ", sqlType=" + sqlType
+		return "AbstractField [name=" + name
 				+ ", length=" + length + ", nullable=" + nullable
 				+ ", editItemValues=" + Arrays.toString(editItemValues)
 				+ ", euro=" + euro + ", editRoles=" + editRoles
@@ -28,7 +27,6 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 	private final String name;
 	private final String propertyName;
 	private final boolean nullable;
-	private final int sqlType;
 	protected Set<String> viewRoles;
 
 
@@ -51,65 +49,56 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 		return ret.toString();
 	}
 
-	public AbstractField(String name, boolean nullable, int length, int sqlType) {
+	public AbstractField(String name, boolean nullable, int length) {
 		super();
 		propertyName = toCamel(name,false);
 		this.name = name;
 		this.nullable = nullable;
 		this.length = length;
-		this.sqlType = sqlType;
 	}
 
-	public AbstractField(String name, boolean nullable, int length, int sqlType, EditItemValue[] editItemValues) {
+	public AbstractField(String name, boolean nullable, int length, EditItemValue[] editItemValues) {
 		super();
 		propertyName = toCamel(name,false);
 		this.name = name;
 		this.nullable = nullable;
 		this.length = length;
-		this.sqlType = sqlType;
 		this.editItemValues = editItemValues;
 	}
 
-	public AbstractField(String name, String propertyName, boolean nullable, int length, int sqlType) {
+	public AbstractField(String name, String propertyName, boolean nullable, int length) {
 		super();
 		this.propertyName = propertyName;
 		this.name = name;
 		this.nullable = nullable;
 		this.length = length;
-		this.sqlType = sqlType;
 	}
 
-	public AbstractField(String name,  String propertyName, boolean nullable, int length, int sqlType, EditItemValue[] editItemValues) {
+	public AbstractField(String name,  String propertyName, boolean nullable, int length, EditItemValue[] editItemValues) {
 		super();
 		this.name = name;
 		this.propertyName = propertyName;
 		this.nullable = nullable;
 		this.length = length;
-		this.sqlType = sqlType;
+//		this.sqlType = sqlType;
 		this.editItemValues = editItemValues;
 	}
 
-	@Override
-	public void checkValue(T bean) {
-		checkValue(getValue(bean));
-	}
+//	@Override
+//	public void checkValue(T bean) {
+//		checkValue(getValue(bean));
+//	}
 
-
-	protected void checkValue(Object value) {
+	protected void checkValue(V value) {
 		if (value == null && !isNullable())
 			throw new IllegalArgumentException(name + " cannot be null");
 		if (editItemValues!=null && editItemValues.length>0){
 			if(!contains(value))
 				throw new IllegalArgumentException(name + " cannot be set with value:"+value);
 		}
-		if (value instanceof String) {
-			String s = (String) value;
-			if (length > 0 && s.length() > length)
-				throw new IllegalArgumentException(name + " cannot be longer than " + length);
-		}
 	}
 
-	private boolean contains(Object value) {
+	protected boolean contains(Object value) {
 		if (value==null)
 			return false;
 		for (int i = 0; i < editItemValues.length; i++) {
@@ -139,39 +128,6 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 		return name;
 	}
 
-	public int getSqlType() {
-		return sqlType;
-	}
-
-	protected String getStringValue(ResultSet rs) throws SQLException {
-		if (charsetConverter==null){
-			String value = rs.getString(getName());
-			if (value!=null)
-				return value.trim();
-			return null;
-		}
-		byte[] bytes = rs.getBytes(getName());
-		return charsetConverter.convertFromDb(bytes);
-	}
-
-	protected Integer getIntegerValue(ResultSet rs) throws SQLException {
-		Object value = rs.getObject(getName());
-		if (value==null)
-			return null;
-		if (value.getClass().equals(Integer.class))
-			return (Integer)value;
-		return Integer.valueOf(value.toString());
-	}
-
-	protected Integer getShortValue(ResultSet rs) throws SQLException {
-		Object value = rs.getObject(getName());
-		if (value==null)
-			return null;
-		if (value.getClass().equals(Integer.class))
-			return (Integer)value;
-		return Integer.valueOf(value.toString());
-	}
-
 	public Set<String> getViewRoles() {
 		return viewRoles;
 	}
@@ -196,21 +152,40 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 		this.editRoles = editRoles;
 	}
 
-	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
-		if (bean != null) {
-			Object value = getValue(bean);
-			if (value != null){
-				if(charsetConverter!=null && value.getClass()==String.class){
-					byte[] bytes = charsetConverter.convertFromApplication((String)value);
-					stm.setBytes(index, bytes);
-				} else
-					stm.setObject(index, value);
-			}else if (!isNullable() || isKey())
-				throw new IllegalArgumentException(getName() + " cannot be null");
-			else
-				stm.setNull(index, getSqlType());
-		}
-	}
+	public abstract void setParam(PreparedStatement stm, int index, T bean) throws SQLException;
+
+
+//	private int calcType() {
+//		Integer t = sqlTypeMap.get(getValueClass());
+//		if (t==null) return Types.VARCHAR;
+//		return t.intValue();
+//	}
+//
+//	private static Map<Class<?>, Integer> sqlTypeMap = new HashMap<Class<?>, Integer>();
+//
+//	private static void addMap(int type, Class<?> class1) {
+//		sqlTypeMap.put(class1, type);
+//	}
+//
+//	static {
+//		addMap(Types.BIGINT, Long.class);
+//		addMap(Types.BINARY, byte[].class);
+//		addMap(Types.BOOLEAN, Boolean.class);
+//		addMap(Types.DATE, java.sql.Date.class);
+//		addMap(Types.DECIMAL, BigDecimal.class);
+//		addMap(Types.DOUBLE, Double.class);
+//		addMap(Types.INTEGER, Integer.class);
+//		addMap(Types.NCLOB, Object.class);
+//		addMap(Types.NUMERIC, java.math.BigDecimal.class);
+//		addMap(Types.REAL, Float.class);
+//		addMap(Types.REF, Object.class);
+//		addMap(Types.TIME, java.sql.Time.class);
+//		addMap(Types.TIMESTAMP, java.sql.Timestamp.class);
+//		addMap(Types.TINYINT, Byte.class);
+//		addMap(Types.VARCHAR, String.class);
+//		addMap(Types.BLOB, byte[].class);
+//	}
+
 
 	public void setViewRoles(Set<String> viewRoles) {
 		this.viewRoles = viewRoles;
@@ -230,6 +205,5 @@ public abstract class AbstractField<T extends PersistentObject, V> implements Fi
 	public String getPropertyName() {
 		return propertyName;
 	}
-
 
 }

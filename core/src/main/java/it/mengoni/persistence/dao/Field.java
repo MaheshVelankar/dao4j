@@ -1,6 +1,6 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.EditItemValue;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
 
 import java.sql.PreparedStatement;
@@ -18,7 +18,7 @@ public interface Field<T extends PersistentObject, V> {
 
 	public int getLength();
 
-	public void checkValue(T bean);
+//	public void checkValue(T bean);
 
 	public void readValueFrom(ResultSet rs, T bean);
 
@@ -28,7 +28,9 @@ public interface Field<T extends PersistentObject, V> {
 
 	public void setValue(V value, T bean);
 
-	public int getSqlType();
+	public Class<?> getValueClass();
+
+//	public int getSqlType();
 
 	public EditItemValue[] getEditItemValues();
 

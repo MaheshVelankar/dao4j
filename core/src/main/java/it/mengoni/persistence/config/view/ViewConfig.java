@@ -1,4 +1,4 @@
-package it.mengoni.config.view;
+package it.mengoni.persistence.config.view;
 
 public interface ViewConfig {
 

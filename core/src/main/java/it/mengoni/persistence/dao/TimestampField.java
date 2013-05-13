@@ -1,23 +1,26 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.EditItemValue;
-import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
+import it.mengoni.persistence.exception.SystemError;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 
 public abstract class TimestampField<T extends PersistentObject> extends AbstractField<T, Timestamp> {
 
 	public TimestampField(String name, String propertyName,
-			boolean nullable, int length, int sqlType,
+			boolean nullable,
 			EditItemValue[] editItemValues) {
-		super(name, propertyName, nullable, length, sqlType, editItemValues);
+		super(name, propertyName, nullable, 0, editItemValues);
 	}
 
 	public TimestampField(String name, String propertyName,
-			boolean nullable, int length, int sqlType) {
-		super(name, propertyName, nullable, length, sqlType);
+			boolean nullable) {
+		super(name, propertyName, nullable, 0);
 	}
 
 	@Override
@@ -32,8 +35,23 @@ public abstract class TimestampField<T extends PersistentObject> extends Abstrac
 			value = rs.getTimestamp(getName());
 			setValue(value, bean);
 		} catch (Exception e) {
-			throw new SystemError("Error: sqlType=" + getSqlType() + " " + getName(), e);
+			throw new SystemError("Error:" + getName(), e);
 		}
 	}
 
+	@Override
+	public Class<?> getValueClass() {
+		return Timestamp.class;
+	}
+
+	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
+		if (bean != null) {
+			Timestamp value = getValue(bean);
+			checkValue(value);
+			if (value == null)
+				stm.setNull(index, Types.TIMESTAMP);
+			else
+				stm.setObject(index, value);
+		}
+	}
 }

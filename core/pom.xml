@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>it.mengoni</groupId>
 	<artifactId>dao4jCore</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.1-SNAPSHOT</version>
 	<name>daoLmCore</name>
 	<properties>
 		<spring.version>3.0.6.RELEASE</spring.version>

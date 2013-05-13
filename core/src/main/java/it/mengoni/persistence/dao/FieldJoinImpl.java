@@ -1,18 +1,17 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.EditItemValue;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public abstract class FieldJoinImpl<T extends PersistentObject, V> extends FieldImpl<T, V> implements FieldJoin<T, V>{
+public abstract class FieldJoinImpl<T extends PersistentObject, V> extends AbstractField<T, V> implements FieldJoin<T, V>{
 
 	@Override
 	public String toString() {
 		return "FieldJoinImpl [" +
 				"getName()=" + getName() +
-				", getSqlType()="+ getSqlType() +
 				", getLength()=" + getLength() +
 				", joinTableName=" + joinTableName +
 				", joinKeyField=" + joinKeyField +
@@ -30,9 +29,9 @@ public abstract class FieldJoinImpl<T extends PersistentObject, V> extends Field
 	private final JoinType joinType;
 
 	public FieldJoinImpl(JoinType joinType, String name, String localKeyField, String joinField,
-			String joinTableName, String joinTableAlias, String joinKeyField, int length, int sqlType,
+			String joinTableName, String joinTableAlias, String joinKeyField,
 			EditItemValue[] editItemValues) {
-		super(name, false, true, length, sqlType, editItemValues);
+		super(name, true, 0, editItemValues);
 		this.joinType = joinType;
 		int p = localKeyField.indexOf('.');
 		if (p>0){

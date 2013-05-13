@@ -1,6 +1,6 @@
 package it.mengoni.persistence.dto;
 
-import it.mengoni.db.EditItemValue;
+import it.mengoni.persistence.db.EditItemValue;
 
 import java.io.Serializable;
 

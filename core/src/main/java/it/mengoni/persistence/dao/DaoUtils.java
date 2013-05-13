@@ -1,6 +1,6 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.DaoFactory;
+import it.mengoni.persistence.db.DaoFactory;
 import it.mengoni.persistence.dto.PersistentObject;
 
 import java.util.HashMap;

@@ -9,15 +9,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public abstract class IntegerField<T extends PersistentObject> extends AbstractField<T, Integer> {
+public abstract class DoubleField<T extends PersistentObject> extends AbstractField<T, Double> {
 
-	public IntegerField(String name, String propertyName,
+	public DoubleField(String name, String propertyName,
 			boolean nullable,
 			EditItemValue[] editItemValues) {
 		super(name, propertyName, nullable, 0, editItemValues);
 	}
 
-	public IntegerField(String name, String propertyName,
+	public DoubleField(String name, String propertyName,
 			boolean nullable) {
 		super(name, propertyName, nullable, 0);
 	}
@@ -27,20 +27,20 @@ public abstract class IntegerField<T extends PersistentObject> extends AbstractF
 		return false;
 	}
 
-	protected Integer getIntegerValue(ResultSet rs) throws SQLException {
+	protected Double getDoubleValue(ResultSet rs) throws SQLException {
 		Object value = rs.getObject(getName());
 		if (value==null)
 			return null;
-		if (value.getClass().equals(Integer.class))
-			return (Integer)value;
-		return Integer.valueOf(value.toString());
+		if (value.getClass().equals(Double.class))
+			return (Double)value;
+		return Double.valueOf(value.toString());
 	}
 
 	@Override
 	public void readValueFrom(ResultSet rs, T bean) {
-		Integer value = null;
+		Double value = null;
 		try{
-			value = getIntegerValue(rs);
+			value = getDoubleValue(rs);
 			setValue(value, bean);
 		} catch (Exception e) {
 			throw new SystemError("Error:" + getName(), e);
@@ -49,15 +49,15 @@ public abstract class IntegerField<T extends PersistentObject> extends AbstractF
 
 	@Override
 	public Class<?> getValueClass() {
-		return Integer.class;
+		return Double.class;
 	}
 
 	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
 		if (bean != null) {
-			Integer value = getValue(bean);
+			Double value = getValue(bean);
 			checkValue(value);
 			if (value == null)
-				stm.setNull(index, Types.INTEGER);
+				stm.setNull(index, Types.DOUBLE);
 			else
 				stm.setObject(index, value);
 		}

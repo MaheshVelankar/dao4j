@@ -1,10 +1,10 @@
 package it.mengoni.persistence.dao;
 
 
-import it.mengoni.exception.LogicError;
-import it.mengoni.exception.SystemError;
 import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 import it.mengoni.persistence.dto.PersistentObject;
+import it.mengoni.persistence.exception.LogicError;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.io.File;
 import java.io.FileInputStream;

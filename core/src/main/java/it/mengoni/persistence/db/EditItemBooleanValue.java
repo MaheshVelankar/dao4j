@@ -1,4 +1,4 @@
-package it.mengoni.db;
+package it.mengoni.persistence.db;
 
 public interface EditItemBooleanValue extends EditItemValue {
 

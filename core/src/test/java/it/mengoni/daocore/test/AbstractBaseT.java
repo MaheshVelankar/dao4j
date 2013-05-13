@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.exception.SystemError;
 
 import org.junit.BeforeClass;
 import org.springframework.context.support.AbstractApplicationContext;

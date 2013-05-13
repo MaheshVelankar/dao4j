@@ -22,9 +22,15 @@ public interface PersistentObject extends Serializable{
 
 	public Tuple getKey();
 
+	public void setKey(Tuple key);
+
 	public String getDisplayLabel();
 
 	public void beforeSave();
+
+	public void beforeDelete();
+
+	public void beforeInsert();
 
 	public PersistentObject NULL_OBJECT = new PersistentObject() {
 
@@ -77,6 +83,23 @@ public interface PersistentObject extends Serializable{
 
 		@Override
 		public void beforeSave() {
+
+		}
+
+		@Override
+		public void beforeDelete() {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void beforeInsert() {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void setKey(Tuple key) {
 			// TODO Auto-generated method stub
 
 		}

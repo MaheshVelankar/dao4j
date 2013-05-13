@@ -1,23 +1,25 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.db.EditItemValue;
-import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
+import it.mengoni.persistence.exception.SystemError;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Types;
 
-public abstract class TimeField<T extends PersistentObject> extends AbstractField<T, Time> {
+public abstract class TimeField<T extends PersistentObject> extends
+		AbstractField<T, Time> {
 
-	public TimeField(String name, String propertyName,
-			boolean nullable, int length, int sqlType,
+	public TimeField(String name, String propertyName, boolean nullable,
 			EditItemValue[] editItemValues) {
-		super(name, propertyName, nullable, length, sqlType, editItemValues);
+		super(name, propertyName, nullable, 0, editItemValues);
 	}
 
-	public TimeField(String name, String propertyName,
-			boolean nullable, int length, int sqlType) {
-		super(name, propertyName, nullable, length, sqlType);
+	public TimeField(String name, String propertyName, boolean nullable) {
+		super(name, propertyName, nullable, 0);
 	}
 
 	@Override
@@ -28,12 +30,27 @@ public abstract class TimeField<T extends PersistentObject> extends AbstractFiel
 	@Override
 	public void readValueFrom(ResultSet rs, T bean) {
 		Time value = null;
-		try{
+		try {
 			value = rs.getTime(getName());
 			setValue(value, bean);
 		} catch (Exception e) {
-			throw new SystemError("Error: sqlType=" + getSqlType() + " " + getName(), e);
+			throw new SystemError("Error:" + getName(), e);
 		}
 	}
 
+	@Override
+	public Class<?> getValueClass() {
+		return Time.class;
+	}
+
+	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
+		if (bean != null) {
+			Time value = getValue(bean);
+			checkValue(value);
+			if (value == null)
+				stm.setNull(index, Types.TIME);
+			else
+				stm.setObject(index, value);
+		}
+	}
 }

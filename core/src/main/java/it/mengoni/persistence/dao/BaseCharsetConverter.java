@@ -1,6 +1,6 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.exception.LogicError;
+import it.mengoni.persistence.exception.LogicError;
 
 import java.io.UnsupportedEncodingException;
 

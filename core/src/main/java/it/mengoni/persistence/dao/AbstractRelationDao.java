@@ -1,8 +1,10 @@
 package it.mengoni.persistence.dao;
 
-import it.mengoni.exception.LogicError;
-import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.dao.JdbcHelper.BeanCreator;
+import it.mengoni.persistence.dao.JdbcHelper.BeanSqlSetter;
 import it.mengoni.persistence.dto.PersistentObject;
+import it.mengoni.persistence.exception.LogicError;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,15 +23,22 @@ import org.javatuples.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractRelationDao<T extends PersistentObject> extends AbstractDao<T> {
+public abstract class AbstractRelationDao<T extends PersistentObject> implements Dao<T> {
 
-	private static Logger logger = LoggerFactory.getLogger(JdbcHelper.class);
+	private static Logger logger = LoggerFactory.getLogger(AbstractRelationDao.class);
 	private static final String MODULO = AbstractRelationDao.class.getSimpleName();
 
 	private static final String PK_ERR = "In the table %s the primary key: %s exist";
 	private static final String PK_ERR_ITA = "Esiste un oggetto nella tabella %s con la stessa chiave primaria: %s";
 
 	private static boolean isIt = "it".equalsIgnoreCase(System.getProperty("user.language"));
+
+	private final String[] keyNames;
+	private KeyGenerator<T> keyGenerator;
+	protected final JdbcHelper jdbcHelper;
+	protected List<Condition> fixedConditions;
+	protected CharsetConverter charsetConverter;
+	protected it.mengoni.persistence.dao.Dao.DatabaseProductType databaseProductType;
 
 	protected final String relationName;
 	protected final List<Field<T, ?>> fields;
@@ -42,17 +51,334 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 	private String countSql;
 	private String innerSelectSql;
 
+	public AbstractRelationDao(JdbcHelper jdbcHelper, CharsetConverter charsetConverter, String relationName, List<Field<T, ?>> fields) {
+		if (jdbcHelper==null )
+			throw new IllegalArgumentException("jdbcHelper not assigned "+getDaoLabel());
+		keyNames = extractKeyNames(fields);
+		if (keyNames==null || keyNames.length==0)
+			throw new IllegalArgumentException("keyNames not assigned "+getDaoLabel());
+		this.charsetConverter = charsetConverter;
+		this.jdbcHelper = jdbcHelper;
+		this.databaseProductType = jdbcHelper.getDatabaseProductType();
+		this.fields = fields;
+		this.relationName = relationName;
+		fieldMap = new HashMap<String, Field<T, ?>>();
+		propertyMap = new HashMap<String, Field<T, ?>>();
+		for (Field<T, ?> field : fields) {
+			field.setCharsetConverter(charsetConverter);
+			fieldMap.put(field.getName(), field);
+			propertyMap.put(field.getPropertyName(), field);
+		}
+	}
+
+
+	protected String[] getKeyNames() {
+		return keyNames;
+	}
+
+	public KeyGenerator<T> getKeyGenerator() {
+		return keyGenerator;
+	}
+
+	public void setKeyGenerator(KeyGenerator<T> keyGenerator) {
+		this.keyGenerator = keyGenerator;
+	}
+
+	public CharsetConverter getCharsetConverter() {
+		return charsetConverter;
+	}
+
+	@Override
+	public void setCharsetConverter(CharsetConverter charsetConverter) {
+		this.charsetConverter = charsetConverter;
+	}
+
+	private BeanCreator<T> beanCreator = new BeanCreator<T>(){
+
+		@Override
+		public T getBean(ResultSet rs, int rowNum) throws SystemError, LogicError {
+			try{
+				T bean = AbstractRelationDao.this.getBean(rs, rowNum);
+				bean.saved();
+				return bean;
+			} catch (SQLException e) {
+				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "getBean",  e);
+			}
+		}
+
+	};
+
+	private BeanSqlSetter<T> beanPkSetter = new BeanSqlSetter<T>(){
+		@Override
+		public void setParams(PreparedStatement stm, T bean) throws SystemError, LogicError {
+			try{
+				int p=1;
+				setKey(stm, bean, p);
+			} catch (SQLException e) {
+				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "setParams",  e);
+			}
+		}
+	};
+
+	private BeanSqlSetter<T> beanUpdateSetter = new BeanSqlSetter<T>(){
+		@Override
+		public void setParams(PreparedStatement stm, T bean) throws SystemError, LogicError {
+			try{
+				int p = AbstractRelationDao.this.setParams(stm, bean);
+				setKey(stm, bean, p);
+			} catch (SQLException e) {
+				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "setParams",  e);
+			}
+		}
+	};
+
+	private void setKey(PreparedStatement stm, T bean, int p) throws SQLException, LogicError{
+		checkKey(bean);
+		Tuple k = bean.getKey();
+		for (int i=0; i<k.getSize(); i++){
+			Object v = k.getValue(i);
+			stm.setObject(p++, v);
+		}
+	}
+
+	private BeanSqlSetter<T> beanSqlSetter = new BeanSqlSetter<T>(){
+		@Override
+		public void setParams(PreparedStatement stm, T bean) throws SystemError, LogicError {
+			try{
+				AbstractRelationDao.this.setParams(stm, bean);
+			} catch (SQLException e) {
+				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "setParams",  e);
+			}
+		}
+	};
+
+	public List<T> getAllOrder(int page, int pageSize, String orderBy) throws SystemError, LogicError {
+		StringBuilder buf = new StringBuilder(getSelectSql(page, pageSize, orderBy));
+		return jdbcHelper.queryForList(buf.toString(), beanCreator);
+	}
+
+	public List<T> getAllOrder(String orderBy) throws SystemError, LogicError {
+		StringBuilder buf = new StringBuilder(getSelectSql(0,0, orderBy));
+		return jdbcHelper.queryForList(buf.toString(), beanCreator);
+	}
+
+	protected String calcPreselect(int page, int pageSize) throws LogicError {
+		if (page>0 && pageSize>0){
+			StringBuilder preselect = new StringBuilder(" ");
+			if (databaseProductType==DatabaseProductType.firebird){
+				preselect.append("first ").append(pageSize).append(" ");
+				if (page>1)
+					preselect.append("skip ").append((page-1)*pageSize).append(" ");
+			}
+			if (databaseProductType==DatabaseProductType.postgresql){
+				/*Now suppose you wanted to show results 11-20. With the OFFSET keyword its just as easy, the following query will do:
+
+SELECT column FROM table
+LIMIT 10 OFFSET 10*/
+				preselect.append("LIMIT ").append(pageSize).append(" ");
+				//				if (page>1)
+				preselect.append("OFFSET ").append((page-1)*pageSize).append(" ");
+			}
+			if (databaseProductType==DatabaseProductType.mysql){
+				/*
+				 * With two arguments, the first argument specifies the offset of the first row to return,
+				 * and the second specifies the maximum number of rows to return.
+				 * The offset of the initial row is 0 (not 1):
+SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
+				 */
+				preselect.append("LIMIT ").append((page-1)*pageSize).append(", ").append(pageSize);
+			}
+			return preselect.toString();
+		}
+		if (page<=0 && pageSize>0)
+			throw new LogicError( "Error in query execution : le pagine sono numerate da 1"+getDaoLabel());
+		return null;
+	}
+
+	@Override
+	public List<T> getAll() throws SystemError, LogicError {
+		return getAllOrder(null);
+	}
+
+	@Override
+	public List<T> getAll(int page, int pageSize) throws LogicError {
+		return jdbcHelper.queryForList(getSelectSql(page, pageSize, null), beanCreator);
+	}
+
 	@Override
 	public int insert(T bean) throws SystemError, LogicError {
+		if (bean==null)
+			throw new IllegalArgumentException("bean is null" + getDaoLabel());
+		checkKey(bean);
+		bean.beforeSave();
 		try{
-			return super.insert(bean);
+			int res;
+			res = jdbcHelper.updateObject(getInsertSql(), beanSqlSetter, bean);
+			if (res==1)
+				bean.saved();
+			return res;
 		} catch (SystemError e) {
 			if (databaseProductType==DatabaseProductType.firebird && e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
 				throw new LogicError(String.format(isIt?PK_ERR_ITA:PK_ERR, relationName, dump(bean.getKey())));
 			}
 			throw e;
 		}
+	}
 
+	private void checkKey(T bean) throws SystemError, LogicError {
+		Tuple k = bean.getKey();
+		if (DaoUtils.isEmpty(k)){
+			if(keyGenerator==null)
+				throw new IllegalArgumentException("bean key is null" + getDaoLabel());
+			else
+				k = keyGenerator.newKey(bean, keyNames);
+		}
+		checkKey(k);
+	}
+
+	private void checkKey(Tuple k) {
+		if (k==null )
+			throw new IllegalArgumentException("key is null" + getDaoLabel());
+		if (keyNames==null || keyNames.length!=k.getSize())
+			throw new IllegalArgumentException("keyNames error" + getDaoLabel());
+		for (int i=0; i<k.getSize(); i++){
+			Object v = k.getValue(i);
+			if (v instanceof String){
+				if (((String)v).trim().isEmpty())
+					throw new IllegalArgumentException("value for "+keyNames[i]+" is undefined" + getDaoLabel());
+			} else
+				if (v==null )
+					throw new IllegalArgumentException("value for "+keyNames[i]+" is undefined" + getDaoLabel());
+		}
+	}
+
+
+	@Override
+	public int delete(Tuple key) throws SystemError, LogicError {
+		if (key==null)
+			throw new IllegalArgumentException("key is null" + getDaoLabel());
+		checkKey(key);
+		int res = jdbcHelper.update(getDeleteSql(), key.toArray());
+		return res;
+
+	}
+
+	@Override
+	public int delete(T bean) throws SystemError, LogicError {
+		if (bean==null)
+			throw new IllegalArgumentException("bean is null" + getDaoLabel());
+		checkKey(bean);
+		int res = jdbcHelper.updateObject(getDeleteSql(), beanPkSetter, bean);
+		if (res==1)
+			bean.deleted();
+		return res;
+	}
+
+	@Override
+	public int update(T bean) throws SystemError, LogicError {
+		if (bean==null)
+			throw new IllegalArgumentException("bean is null" + getDaoLabel());
+		checkKey(bean);
+		bean.beforeSave();
+		try{
+			int res = jdbcHelper.updateObject(getUpdateSql(), beanUpdateSetter, bean);
+			if (res==1)
+				bean.saved();
+			return res;
+		} catch (SystemError e) {
+			if (databaseProductType==DatabaseProductType.firebird && e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
+				throw new LogicError(String.format(isIt?PK_ERR_ITA:PK_ERR, relationName, dump(bean.getKey())));
+			}
+			throw e;
+		}
+	}
+
+	public List<T> getList(String sql, Object ... params) throws SystemError, LogicError {
+		return jdbcHelper.queryForList(sql, beanCreator, params);
+	}
+
+	public List<T> getListOrder(String sql, String orderBy, Object ... params) throws SystemError, LogicError {
+		StringBuilder buf = new StringBuilder(sql);
+		if (orderBy!=null && !orderBy.trim().isEmpty()){
+			buf.append(" order by ").append(orderBy);
+		}
+		return jdbcHelper.queryForList(buf.toString(), beanCreator, params);
+	}
+
+
+	public T get(Tuple key) throws SystemError, LogicError{
+		if (key==null)
+			throw new IllegalArgumentException("bean key is null" + getDaoLabel());
+		return jdbcHelper.queryForObject(getSelectSqlForKey(), beanCreator, key.toArray());
+	}
+
+	protected String getSelectSqlForKey() {
+		StringBuilder ret = new StringBuilder(getSelectSql(0,0,null));
+		String s = getPkSql();
+		if (s!=null && !s.trim().isEmpty()){
+			ret.append(" where ");
+			ret.append(s);
+		}
+		return ret.toString();
+	}
+
+
+	public List<T> getListFor(Condition ... conditions) throws LogicError {
+		return getListForInner(0, 0, null, conditions);
+	}
+
+	protected List<T> getListForInner(int page, int pageSize, String orderBy, Condition ... conditions) throws LogicError {
+		SqlWhere where = new SqlWhere(conditions);
+		if (fixedConditions!=null){
+			for (Condition condition : conditions) {
+				where.addCondition(condition);
+			}
+		}
+		StringBuilder buf = new StringBuilder(getSelectSql(page, pageSize, orderBy, where.getWhere()));
+		return jdbcHelper.queryForList(buf.toString(), beanCreator, where.getParamsArray());
+	}
+
+	@Override
+	public List<T> getListForOrder(int page, int pageSize, String orderBy,	Condition... conditions) throws LogicError {
+		return getListForInner(page, pageSize, orderBy, conditions);
+	}
+
+	@Override
+	public List<T> getListForOrder(String orderBy,
+			Collection<Condition> conditions) throws LogicError {
+		return getListForInner(0,0, orderBy, conditions.toArray(new Condition[0]));
+	}
+
+	@Override
+	public List<T> getListForOrder(int page, int pageSize, String orderBy,
+			Collection<Condition> conditions) throws LogicError {
+		return getListForInner(page, pageSize, orderBy, conditions.toArray(new Condition[0]));
+	}
+
+	public List<T> getListFor(Collection<Condition> conditions) throws LogicError {
+		return getListForInner(0,0, null, conditions.toArray(new Condition[0]));
+	}
+
+	@Override
+	public List<T> getListFor(int page, int pageSize, Condition... conditions) throws LogicError {
+		return getListForInner(page, pageSize, null, conditions);
+	}
+
+	@Override
+	public List<T> getListFor(int page, int pageSize,
+			Collection<Condition> conditions) throws LogicError {
+		return getListForInner(page, pageSize, null, conditions.toArray(new Condition[0]));
+	}
+
+	public List<T> getListForOrder(String orderBy, Condition... conditions) throws LogicError{
+		return getListForInner(0,0, orderBy, conditions);
+	}
+	public it.mengoni.persistence.dao.Dao.DatabaseProductType getDatabaseProductType() {
+		return databaseProductType;
+	}
+	public void setDatabaseProductType(
+			it.mengoni.persistence.dao.Dao.DatabaseProductType databaseProductType) {
+		this.databaseProductType = databaseProductType;
 	}
 
 	private String dump(Tuple key) {
@@ -63,36 +389,6 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			ret.append(key.getValue(i));
 		}
 		return ret.toString();
-	}
-
-	@Override
-	public int delete(T bean) throws SystemError,LogicError {
-		return super.delete(bean);
-	}
-
-	@Override
-	public int update(T bean) throws SystemError, LogicError {
-		try{
-			return super.update(bean);
-		} catch (SystemError e) {
-			if (databaseProductType==DatabaseProductType.firebird && e.getMessage().contains("335544665") && e.getMessage().contains("FBSQLException")){
-				throw new LogicError(String.format(isIt?PK_ERR_ITA:PK_ERR, relationName, dump(bean.getKey())));
-			}
-			throw e;
-		}
-	}
-
-	public AbstractRelationDao(JdbcHelper jdbcHelper, CharsetConverter charsetConverter, String relationName, List<Field<T, ?>> fields) {
-		super(jdbcHelper, charsetConverter, extractKeyNames(fields));
-		this.fields = fields;
-		this.relationName = relationName;
-		fieldMap = new HashMap<String, Field<T, ?>>();
-		propertyMap = new HashMap<String, Field<T, ?>>();
-		for (Field<T, ?> field : fields) {
-			field.setCharsetConverter(charsetConverter);
-			fieldMap.put(field.getName(), field);
-			propertyMap.put(field.getPropertyName(), field);
-		}
 	}
 
 	protected String identifierQuote(String value) {
@@ -150,9 +446,7 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			insertSql= ret.toString();
 		}
 		return insertSql;
-
 	};
-
 
 	protected String getDeleteSql(){
 		if (deleteSql==null){
@@ -162,7 +456,6 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 			deleteSql = ret.toString();
 		}
 		return deleteSql;
-
 	};
 
 	protected String getUpdateSql(){
@@ -185,7 +478,6 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		return updateSql;
 	};
 
-	@Override
 	protected String getPkSql() {
 		if (pkSql==null){
 			StringBuilder ret = new StringBuilder();
@@ -199,8 +491,6 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		return pkSql;
 	}
 
-
-	@Override
 	protected T getBean(ResultSet rs, int rowNum) throws SQLException {
 		T bean = newIstance();
 		for (Field<T, ?> field : fields) {
@@ -216,12 +506,10 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		return bean;
 	}
 
-	@Override
 	protected int setParams(PreparedStatement stm, T bean) throws SQLException {
 		int p = 1;
 		for (Field<T, ?> field : fields) {
 			if (!field.isReadOnly()){
-				field.checkValue(bean);
 				field.setParam(stm, p++, bean);
 			}
 		}
@@ -410,12 +698,10 @@ public abstract class AbstractRelationDao<T extends PersistentObject> extends Ab
 		return field;
 	}
 
-	@Override
 	protected String getDaoLabel() {
 		return " " + relationName;
 	}
 
-	@Override
 	protected String getSelectSql(int page, int pageSize, String orderBy) {
 		return getSelectSql(page, pageSize, orderBy, null);
 	}

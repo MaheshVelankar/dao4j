@@ -1,19 +1,19 @@
 package it.mengoni.persistence.dao;
 
+import it.mengoni.persistence.db.EditItemValue;
+import it.mengoni.persistence.dto.PersistentObject;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import it.mengoni.db.EditItemValue;
-import it.mengoni.persistence.dto.PersistentObject;
-
 public abstract class FieldCalculated<T extends PersistentObject, V>  extends AbstractField<T, V> {
 
-	public FieldCalculated(String name, boolean nullable, int length, int sqlType) {
-		super(name, nullable, length, sqlType);
+	public FieldCalculated(String name, boolean nullable) {
+		super(name, nullable, 0);
 	}
 
-	public FieldCalculated(String name, boolean nullable, int length, int sqlType, EditItemValue[] editItemValues) {
-		super(name, nullable, length, sqlType, editItemValues);
+	public FieldCalculated(String name, boolean nullable, EditItemValue[] editItemValues) {
+		super(name, nullable, 0, editItemValues);
 	}
 
 	public boolean isKey() {
