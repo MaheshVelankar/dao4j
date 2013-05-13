@@ -1,17 +1,19 @@
-package it.mengoni.persistence.dao;
+package it.mengoni.persistence.dao.fields;
 
 import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
 
 
-public abstract class PkShortField<T extends PersistentObject> extends ShortField<T> {
+public abstract class PkIntegerField<T extends PersistentObject> extends IntegerField<T> {
 
-	public PkShortField(String name, String propertyName,
+
+
+	public PkIntegerField(String name, String propertyName,
 			EditItemValue[] editItemValues) {
 		super(name, propertyName, false, editItemValues);
 	}
 
-	public PkShortField(String name, String propertyName) {
+	public PkIntegerField(String name, String propertyName) {
 		super(name, propertyName, false);
 	}
 
@@ -19,6 +21,7 @@ public abstract class PkShortField<T extends PersistentObject> extends ShortFiel
 	public boolean isKey() {
 		return true;
 	}
+
 
 
 }

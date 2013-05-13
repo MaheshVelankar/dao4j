@@ -2,6 +2,7 @@ package it.mengoni.persistence.dao;
 
 import it.mengoni.persistence.dao.JdbcHelper.BeanCreator;
 import it.mengoni.persistence.dao.JdbcHelper.BeanSqlSetter;
+import it.mengoni.persistence.dao.fields.FieldJoinImpl;
 import it.mengoni.persistence.dto.PersistentObject;
 import it.mengoni.persistence.exception.LogicError;
 import it.mengoni.persistence.exception.SystemError;

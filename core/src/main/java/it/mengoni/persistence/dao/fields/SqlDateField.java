@@ -1,24 +1,24 @@
-package it.mengoni.persistence.dao;
+package it.mengoni.persistence.dao.fields;
 
 import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
 import it.mengoni.persistence.exception.SystemError;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public abstract class DoubleField<T extends PersistentObject> extends AbstractField<T, Double> {
+public abstract class SqlDateField<T extends PersistentObject> extends
+		AbstractField<T, java.sql.Date> {
 
-	public DoubleField(String name, String propertyName,
-			boolean nullable,
+	public SqlDateField(String name, String propertyName, boolean nullable,
 			EditItemValue[] editItemValues) {
 		super(name, propertyName, nullable, 0, editItemValues);
 	}
 
-	public DoubleField(String name, String propertyName,
-			boolean nullable) {
+	public SqlDateField(String name, String propertyName, boolean nullable) {
 		super(name, propertyName, nullable, 0);
 	}
 
@@ -27,20 +27,11 @@ public abstract class DoubleField<T extends PersistentObject> extends AbstractFi
 		return false;
 	}
 
-	protected Double getDoubleValue(ResultSet rs) throws SQLException {
-		Object value = rs.getObject(getName());
-		if (value==null)
-			return null;
-		if (value.getClass().equals(Double.class))
-			return (Double)value;
-		return Double.valueOf(value.toString());
-	}
-
 	@Override
 	public void readValueFrom(ResultSet rs, T bean) {
-		Double value = null;
-		try{
-			value = getDoubleValue(rs);
+		java.sql.Date value = null;
+		try {
+			value = rs.getDate(getName());
 			setValue(value, bean);
 		} catch (Exception e) {
 			throw new SystemError("Error:" + getName(), e);
@@ -49,15 +40,15 @@ public abstract class DoubleField<T extends PersistentObject> extends AbstractFi
 
 	@Override
 	public Class<?> getValueClass() {
-		return Double.class;
+		return java.sql.Date.class;
 	}
 
 	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
 		if (bean != null) {
-			Double value = getValue(bean);
+			Date value = getValue(bean);
 			checkValue(value);
 			if (value == null)
-				stm.setNull(index, Types.DOUBLE);
+				stm.setNull(index, Types.DATE);
 			else
 				stm.setObject(index, value);
 		}

@@ -1,4 +1,4 @@
-package it.mengoni.persistence.dao;
+package it.mengoni.persistence.dao.fields;
 
 import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;

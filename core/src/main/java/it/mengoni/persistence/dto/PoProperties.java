@@ -48,4 +48,8 @@ public abstract class PoProperties<T extends PersistentObject> implements Serial
 		return dao.getListFor(conditions);
 	}
 
+	public List<T> getValue() {
+		return value;
+	}
+
 }

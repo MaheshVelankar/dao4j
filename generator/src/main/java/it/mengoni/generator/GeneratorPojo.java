@@ -258,7 +258,7 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 
 								buf.append("public List<").append(extPojoClass).append("> get").append(listEtter).append("(){ \n");
 
-								buf.append("if(").append(pkColumnName).append("==null) \nreturn null;\n");
+								buf.append("if(").append(pkColumnName).append("==null) \nreturn ").append(listMember).append(".getValue();\n");
 
 								buf.append("return ").append(listMember).append(".getValue(").
 									append(DAO_FACTORY).append(".getInstance().get").append(extPojoClass).append(DAO_C).append("(), new ConditionValue(\"").

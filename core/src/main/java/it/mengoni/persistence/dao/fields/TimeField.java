@@ -1,4 +1,4 @@
-package it.mengoni.persistence.dao;
+package it.mengoni.persistence.dao.fields;
 
 import it.mengoni.persistence.db.EditItemValue;
 import it.mengoni.persistence.dto.PersistentObject;
@@ -7,17 +7,18 @@ import it.mengoni.persistence.exception.SystemError;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Types;
 
-public abstract class BooleanField<T extends PersistentObject> extends AbstractField<T, Boolean> {
+public abstract class TimeField<T extends PersistentObject> extends
+		AbstractField<T, Time> {
 
-	public BooleanField(String name, String propertyName, boolean nullable,
+	public TimeField(String name, String propertyName, boolean nullable,
 			EditItemValue[] editItemValues) {
 		super(name, propertyName, nullable, 0, editItemValues);
 	}
 
-	public BooleanField(String name, String propertyName,
-			boolean nullable) {
+	public TimeField(String name, String propertyName, boolean nullable) {
 		super(name, propertyName, nullable, 0);
 	}
 
@@ -28,35 +29,26 @@ public abstract class BooleanField<T extends PersistentObject> extends AbstractF
 
 	@Override
 	public void readValueFrom(ResultSet rs, T bean) {
-		Boolean value = null;
-		try{
-			value = getBooleanValue(rs);
+		Time value = null;
+		try {
+			value = rs.getTime(getName());
 			setValue(value, bean);
 		} catch (Exception e) {
 			throw new SystemError("Error:" + getName(), e);
 		}
 	}
 
-	private Boolean getBooleanValue(ResultSet rs) throws SQLException {
-		Object value = rs.getObject(getName());
-		if (value==null)
-			return null;
-		if (value.getClass().equals(Boolean.class))
-			return (Boolean)value;
-		return Boolean.valueOf(value.toString());
-	}
-
 	@Override
 	public Class<?> getValueClass() {
-		return Boolean.class;
+		return Time.class;
 	}
 
 	public void setParam(PreparedStatement stm, int index, T bean) throws SQLException {
 		if (bean != null) {
-			Boolean value = getValue(bean);
+			Time value = getValue(bean);
 			checkValue(value);
 			if (value == null)
-				stm.setNull(index, Types.BOOLEAN);
+				stm.setNull(index, Types.TIME);
 			else
 				stm.setObject(index, value);
 		}

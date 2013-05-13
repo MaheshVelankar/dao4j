@@ -142,21 +142,10 @@ public abstract class AbstractDao<T extends PersistentObject> implements Dao<T> 
 					preselect.append("skip ").append((page-1)*pageSize).append(" ");
 			}
 			if (databaseProductType==DatabaseProductType.postgresql){
-				/*Now suppose you wanted to show results 11-20. With the OFFSET keyword its just as easy, the following query will do:
-
-SELECT column FROM table
-LIMIT 10 OFFSET 10*/
 				preselect.append("LIMIT ").append(pageSize).append(" ");
-//				if (page>1)
 					preselect.append("OFFSET ").append((page-1)*pageSize).append(" ");
 			}
 			if (databaseProductType==DatabaseProductType.mysql){
-				/*
-				 * With two arguments, the first argument specifies the offset of the first row to return,
-				 * and the second specifies the maximum number of rows to return.
-				 * The offset of the initial row is 0 (not 1):
-SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
-*/
 				preselect.append("LIMIT ").append((page-1)*pageSize).append(", ").append(pageSize);
 			}
 			return preselect.toString();
@@ -286,10 +275,6 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 	public List<T> getListFor(Condition ... conditions) throws LogicError {
 		return getListForInner(0, 0, null, conditions);
 	}
-
-//	public List<T> getListFor(String preselect, Condition ... conditions) throws LogicError {
-//		return getListForInner(preselect, null, conditions);
-//	}
 
 	protected List<T> getListForInner(int page, int pageSize, String orderBy, Condition ... conditions) throws LogicError {
 		SqlWhere where = new SqlWhere(conditions);
