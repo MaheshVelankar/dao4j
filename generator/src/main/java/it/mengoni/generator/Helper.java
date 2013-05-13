@@ -173,10 +173,6 @@ public class Helper {
 		int c=0;
 		try {
 			ResultSet res = meta.getSchemas();
-			ResultSetMetaData rm = res.getMetaData();
-			for (int n=0; n<rm.getColumnCount(); n++){
-				System.out.println(rm.getColumnName(n+1));
-			}
 			while (res.next()) {
 				String s = res.getString(1);
 				Schema tableSchema = new Schema(s, "", catalog);

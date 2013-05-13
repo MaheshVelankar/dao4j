@@ -22,6 +22,14 @@ public class CodeGenConfig implements Serializable{
 		return rootOut;
 	}
 
+	public String getRootTestOut() {
+		if (rootOut.endsWith("src/main/java"))
+			return rootOut.replace("src/main/java", "src/test/java");
+		if (rootOut.endsWith("src/main/java/"))
+			return rootOut.replace("src/main/java/", "src/test/java/");
+		return rootOut;
+	}
+
 	public void setRootOut(String rootOut) {
 		this.rootOut = rootOut;
 	}

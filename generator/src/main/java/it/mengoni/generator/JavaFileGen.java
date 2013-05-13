@@ -1,6 +1,6 @@
 package it.mengoni.generator;
 
-import it.mengoni.exception.SystemError;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,7 @@ public abstract class JavaFileGen extends AbstractFileGenerator {
 		super(rootOut, filePackage, fileName);
 	}
 
-	void createFile() {
+	void createFile(boolean overwrite) {
 		StringBuilder code = new StringBuilder();
 		createClassCode(code, importSet);
 		StringBuilder buf = new StringBuilder();
@@ -34,6 +34,11 @@ public abstract class JavaFileGen extends AbstractFileGenerator {
 			buf.append("import ").append(imp).append(";\n");
 		buf.append(code);
 		String fileName = concatPath(rootOut , filePackage.replaceAll("\\.", "/"), _fileName);
+		File x = new File(fileName);
+		if (!overwrite && x.exists()){
+			logger.info("skipped file:"+filePackage+"." +_fileName);
+			return;
+		}
 		String dir = getFileDirectory(fileName, "/");
 		forceDir(dir, "/");
 		try {
@@ -51,6 +56,7 @@ public abstract class JavaFileGen extends AbstractFileGenerator {
 		} catch (Exception e) {
 			logger.error("Error in format:" + fileName, e);
 		}
+		logger.info("generated file:"+ filePackage+"." +_fileName);
 	}
 
 	protected abstract void createClassCode(StringBuilder code,

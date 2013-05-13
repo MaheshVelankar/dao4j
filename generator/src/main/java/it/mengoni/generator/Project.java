@@ -1,8 +1,8 @@
 package it.mengoni.generator;
 
-import it.mengoni.exception.SystemError;
 import it.mengoni.jdbc.model.Root;
 import it.mengoni.jdbc.model.Schema;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.io.File;
 import java.io.FileInputStream;

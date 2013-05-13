@@ -15,7 +15,6 @@ import it.mengoni.persistence.dto.PoProperties;
 import it.mengoni.persistence.dto.PoProperty;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -33,16 +32,16 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 		this.basePackage = basePackage;
 	}
 
-	public void genPojo(final Table table) throws IOException {
+	public void genPojoIntfInner(final Table table) throws IOException {
 		final String tablename = Helper.toCamel(table.getJavaName());
-		String fileName =  tablename + JAVA_EXT;
+		String fileName =  "_"+tablename + JAVA_EXT;
 		String filePackage = concatPackage(basePackage,DTO_P);
 		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
 			@Override
 			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
 				importSet.add(PersistentObject.class.getName());
-				buf.append("public interface ").append(tablename).append(" extends PersistentObject {\n");
-
+				buf.append("/* this file will be overwritten by code generator, apply edits oly if you agree to loose them*/\n\n");
+				buf.append("public interface _").append(tablename).append(" extends PersistentObject {\n");
 				List<TableColunm> fields = table.getColumns().getColunms();
 				for (int i = 0; i < fields.size(); i++) {
 					TableColunm c = fields.get(i);
@@ -52,23 +51,23 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				}
 				Fks x = table.getForeignKeys();
 				if (x!=null){
-					Set<String> done = new HashSet<String>();
 					List<Fk> fks = x.getChildren();
 					for (int i = 0; i < fks.size(); i++) {
 						Fk fk = fks.get(i);
 						if (!fk.isSelected()) continue;
 						if (!"1".endsWith(fk.getKeySeq())) continue;
-						String pkTypeName = Helper.toCamel(fk.getPktableName());
-						if (done.contains(pkTypeName)) continue;
-						done.add(pkTypeName);
-						buf.append("public ").append(pkTypeName).append(" getTo").append(pkTypeName).append("();\n");
-						buf.append("public void setTo").append(pkTypeName).append("(").append(pkTypeName).append(" to").append(pkTypeName).append(");\n");
+						String s = fk.getFkcolumnName();
+						if (s.toLowerCase().startsWith("id_"))
+							s = s.substring(3);
+						String pkTypeName = Helper.toCamel(s);
+						String extPojoClass = Helper.toCamel(fk.getPktableName());
+						buf.append("public ").append(extPojoClass).append(" getTo").append(pkTypeName).append("();\n");
+						buf.append("public void setTo").append(pkTypeName).append("(").append(extPojoClass).append(" to").append(pkTypeName).append(");\n");
 					}
 				}
 				TableReferences refs = table.getRefs();
 				if (refs!=null){
 					Iterator<TableReference> it = refs.getRefIterator();
-					Set<String> done = new HashSet<String>();
 					while (it.hasNext()) {
 						TableReference ref = it.next();
 						if (ref.isSelected()){
@@ -76,11 +75,21 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 							Table rTable = ref.getTarget();
 							if (rTable!=null && fk!=null){
 								importSet.add(List.class.getName());
-								String fkTypeName = Helper.toCamel(fk.getFktableName());
-								if (done.contains(fkTypeName)) continue;
-								done.add(fkTypeName);
-								buf.append("public List<").append(fkTypeName).append("> getList").append(fkTypeName).append("();\n");
-								buf.append("public void setList").append(fkTypeName).append("(List<").append(fkTypeName).append("> to").append(fkTypeName).append(");\n");
+
+								String s;
+								if (fk.getFkcolumnName().equals(fk.getPkcolumnName())){
+									s = fk.getFktableName();
+								}else{
+									s = fk.getFkcolumnName();
+									if (s.toLowerCase().startsWith("id_"))
+										s = s.substring(3);
+									s = fk.getFktableName() + "_" + s;
+								}
+								String listMember = "list"+Helper.toCamel(s);
+								String listEtter = "List"+Helper.toCamel(s);
+								String extPojoClass = Helper.toCamel(rTable.getDbName());
+								buf.append("public List<").append(extPojoClass).append("> get").append(listEtter).append("();\n");
+								buf.append("public void set").append(listEtter).append("(List<").append(extPojoClass).append("> ").append(listMember).append(");\n");
 							}
 						}
 					}
@@ -88,12 +97,27 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				buf.append("}\n");
 			}
 		};
-		gen.createFile();
+		gen.createFile(true);
+	}
+
+	public void genPojoIntf(final Table table) throws IOException {
+		final String tablename = Helper.toCamel(table.getJavaName());
+		String fileName =  tablename + JAVA_EXT;
+		String filePackage = concatPackage(basePackage,DTO_P);
+		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
+			@Override
+			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
+				buf.append("/* this file will be preserved by code generator, apply customization edits here */\n\n");
+				buf.append("public interface ").append(tablename).append(" extends _").append(tablename).append(" {\n");
+				buf.append("}\n");
+			}
+		};
+		gen.createFile(false);
 	}
 
 	public void genPojoImpl(final Table table) throws IOException {
 		final String tablename = Helper.toCamel(table.getJavaName());
-		final String pojoImplName = tablename + IMPL_C;
+		final String pojoImplName = "_"+tablename + IMPL_C;
 		String fileName =  pojoImplName + JAVA_EXT;
 		String filePackage = concatPackage(basePackage,DTO_P,IMPL_P);
 		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
@@ -106,7 +130,10 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				KeyData kd = new KeyData(fields);
 				importSet.addAll(kd.importSet);
 				importSet.add(kd.tupleClass.getName());
-				buf.append("public class ").append(pojoImplName).append(" extends AbstractPersistentObject implements ").append(tablename).append("  {\n");
+				buf.append("/* this file will be overwritten by code generator, apply edits oly if you agree to loose them*/\n\n");
+				buf.append("public abstract class ").append(pojoImplName).
+				append(" extends AbstractPersistentObject implements ").
+				append(tablename).append("  {\n");
 				buf.append("	private static final long serialVersionUID = 1L;\n");
 				for (int i = 0; i < fields.size(); i++) {
 					TableColunm c = fields.get(i);
@@ -117,21 +144,27 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				buf.append("    public ").append(pojoImplName).append("(){\n");
 				Fks x = table.getForeignKeys();
 				if (x!=null){
-					Set<String> done = new HashSet<String>();
 					List<Fk> fks = x.getChildren();
+					/* this empty instances are used by ZK binder in multiple dots bindings paths*/
 					for (int i = 0; i < fks.size(); i++) {
 						Fk fk = (Fk) fks.get(i);
 						if (!fk.isSelected()) continue;
 						if (!"1".endsWith(fk.getKeySeq())) continue;
-						String pkTypeName = Helper.toCamel(fk.getPktableName());
-						if (done.contains(pkTypeName)) continue;
-						done.add(pkTypeName);
+						String s = fk.getFkcolumnName();
+						if (s.toLowerCase().startsWith("id_"))
+							s = s.substring(3);
+						String pkTypeName = Helper.toCamel(s);
+						String extPojoClass = Helper.toCamel(fk.getPktableName())+IMPL_C;
+						if (("_"+extPojoClass).equals(pojoImplName)) {
+							buf.append("/* link to ").append(extPojoClass).append(" skipped, prevent stack overflow... */\n");
+							continue;
+						}
 						importSet.add(concatPackage(basePackage,DAO_FACTORY));
 						importSet.add(PoProperty.class.getName());
 						importSet.add(PoLazyProperty.class.getName());
-						importSet.add(concatPackage(basePackage,DTO_P,pkTypeName));
+						importSet.add(concatPackage(basePackage,DTO_P,Helper.toCamel(fk.getPktableName())));
 						//String fkPropParam = Helper.toCamel(fk.getFkcolumnName(), false);
-						buf.append("to").append(pkTypeName).append(".setValue(new ").append(pkTypeName).append(IMPL_C).append("());\n");
+						buf.append("to").append(pkTypeName).append(".setValue(new ").append(extPojoClass).append("());\n");
 						buf.append("to").append(pkTypeName).append(".unResolve();\n");
 					}
 				}
@@ -157,30 +190,31 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 
 				x = table.getForeignKeys();
 				if (x!=null){
-					Set<String> done = new HashSet<String>();
 					List<Fk> fks = x.getChildren();
 					for (int i = 0; i < fks.size(); i++) {
 						Fk fk = (Fk) fks.get(i);
 						if (!fk.isSelected()) continue;
 						if (!"1".endsWith(fk.getKeySeq())) continue;
-						String pkTypeName = Helper.toCamel(fk.getPktableName());
-						if (done.contains(pkTypeName)) continue;
-						done.add(pkTypeName);
+						String s = fk.getFkcolumnName();
+						if (s.toLowerCase().startsWith("id_"))
+							s = s.substring(3);
+						String pkTypeName = Helper.toCamel(s);
+						String extPojoClass = Helper.toCamel(fk.getPktableName());
 						importSet.add(concatPackage(basePackage,DAO_FACTORY));
 						importSet.add(PoProperty.class.getName());
 						importSet.add(PoLazyProperty.class.getName());
-						importSet.add(concatPackage(basePackage,DTO_P,pkTypeName));
+						importSet.add(concatPackage(basePackage,DTO_P,Helper.toCamel(fk.getPktableName())));
 						String fkPropParam = Helper.toCamel(fk.getFkcolumnName(), false);
-						buf.append("private transient PoProperty<").append(pkTypeName).append("> to").append(pkTypeName).
-						append("= new PoLazyProperty<").append(pkTypeName).append(">();\n");
-						buf.append("public ").append(pkTypeName).append(" getTo").append(pkTypeName).append("(){ \n");
+						buf.append("protected transient PoProperty<").append(extPojoClass).append("> to").append(pkTypeName).
+						append("= new PoLazyProperty<").append(extPojoClass).append(">();\n");
+						buf.append("public ").append(extPojoClass).append(" getTo").append(pkTypeName).append("(){ \n");
 
 						buf.append("if(").append(fkPropParam).append("==null) \n return this.to").append(pkTypeName).append(".getValue();\n");
 
 						buf.append("return to").append(pkTypeName).append(".getValue(").append(DAO_FACTORY).append(".getInstance().get").
-							append(pkTypeName).append(DAO_C).append("(), ").append(fkPropParam).append(");\n");
+							append(extPojoClass).append(DAO_C).append("(), ").append(fkPropParam).append(");\n");
 						buf.append("}\n");
-						buf.append("public void setTo").append(pkTypeName).append("(").append(pkTypeName).append(" to").append(pkTypeName).append("){\n");
+						buf.append("public void setTo").append(pkTypeName).append("(").append(extPojoClass).append(" to").append(pkTypeName).append("){\n");
 						buf.append("    this.to").append(pkTypeName).append(".setValue(to").append(pkTypeName).append(");\n");
 						buf.append("  this.").append(fkPropParam).append(" = to").append(pkTypeName).append("==null?null:to").append(pkTypeName).append(".get").append(Helper.toCamel(fk.getPkcolumnName(), true)).append("();\n");
 
@@ -189,7 +223,6 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				}
 				TableReferences refs = table.getRefs();
 				if (refs!=null){
-					Set<String> done = new HashSet<String>();
 					Iterator<TableReference> it = refs.getRefIterator();
 					while (it.hasNext()) {
 						TableReference ref = it.next();
@@ -197,32 +230,43 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 							Fk fk = ref.getFk();
 							Table rTable = ref.getTarget();
 							if (rTable!=null && fk!=null){
-								String fkTypeName = Helper.toCamel(fk.getFktableName());
-								String fkColumnName = fk.getFkcolumnName();
+								String extPojoClass = Helper.toCamel(rTable.getDbName());
 								String pkColumnName = Helper.toCamel(fk.getPkcolumnName(), false);
-								if (done.contains(fkTypeName)) continue;
-								done.add(fkTypeName);
 								importSet.add(concatPackage(basePackage,DAO_FACTORY));
 								importSet.add(List.class.getName());
 								importSet.add(ConditionValue.class.getName());
 								importSet.add(PoProperties.class.getName());
 								importSet.add(PoLazyProperties.class.getName());
-								importSet.add(concatPackage(basePackage,DTO_P,fkTypeName));
+								importSet.add(concatPackage(basePackage,DTO_P,extPojoClass));
+								if ("ReferenteDitta".equals(extPojoClass)){
+									System.out.println("xx");
+								}
+								String s;
+								if (fk.getFkcolumnName().equals(fk.getPkcolumnName())){
+									s = fk.getFktableName();
+								}else{
+									s = fk.getFkcolumnName();
+									if (s.toLowerCase().startsWith("id_"))
+										s = s.substring(3);
+									s = fk.getFktableName() + "_" + s;
+								}
+								String listMember = "list"+Helper.toCamel(s);
+								String listEtter = "List"+Helper.toCamel(s);
 
-								buf.append("private transient PoProperties<").append(fkTypeName).append("> list").append(fkTypeName).
-								append("= new PoLazyProperties<").append(fkTypeName).append(">();\n");
+								buf.append("protected transient PoProperties<").append(extPojoClass).append("> ").append(listMember).
+								append("= new PoLazyProperties<").append(extPojoClass).append(">();\n");
 
-								buf.append("public List<").append(fkTypeName).append("> getList").append(fkTypeName).append("(){ \n");
+								buf.append("public List<").append(extPojoClass).append("> get").append(listEtter).append("(){ \n");
 
-								buf.append("if(").append(pkColumnName).append("==null) \nreturn null;");
+								buf.append("if(").append(pkColumnName).append("==null) \nreturn null;\n");
 
-								buf.append("return list").append(fkTypeName).append(".getValue(").
-									append(DAO_FACTORY).append(".getInstance().get").append(fkTypeName).append(DAO_C).append("(), new ConditionValue(\"").
-								append(fkColumnName).append(" = ?\", ").append(pkColumnName).append("));\n");
+								buf.append("return ").append(listMember).append(".getValue(").
+									append(DAO_FACTORY).append(".getInstance().get").append(extPojoClass).append(DAO_C).append("(), new ConditionValue(\"").
+								append(fk.getFkcolumnName()).append(" = ?\", ").append(pkColumnName).append("));\n");
 								buf.append("}\n");
 
-								buf.append("public void setList").append(fkTypeName).append("(List<").append(fkTypeName).append("> list").append(fkTypeName).append("){\n");
-								buf.append("    this.list").append(fkTypeName).append(".setValue(list").append(fkTypeName).append(");\n");
+								buf.append("public void set").append(listEtter).append("(List<").append(extPojoClass).append("> ").append(listMember).append("){\n");
+								buf.append("    this.").append(listMember).append(".setValue(").append(listMember).append(");\n");
 								buf.append("}\n");
 							}
 						}
@@ -234,6 +278,28 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				buf.append("}\n");
 			}
 		};
-		gen.createFile();
+		gen.createFile(true);
 	}
+
+	public void genPojoOuter(final Table table) throws IOException {
+		final String tablename = Helper.toCamel(table.getJavaName());
+		final String pojoImplName = tablename + IMPL_C;
+		String fileName =  pojoImplName + JAVA_EXT;
+		String filePackage = concatPackage(basePackage,DTO_P,IMPL_P);
+		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
+			@Override
+			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
+				buf.append("public class ").append(pojoImplName).append(" extends _").append(pojoImplName).append("  {\n");
+				buf.append("	private static final long serialVersionUID = 1L;\n");
+				//inizio costruttore
+				buf.append("    public ").append(pojoImplName).append("(){\n");
+				buf.append("super();\n");
+				buf.append("}\n");
+				//fine costruttore
+				buf.append("}\n");
+			}
+		};
+		gen.createFile(false);
+	}
+
 }

@@ -9,25 +9,30 @@ import it.mengoni.jdbc.model.Table;
 import it.mengoni.jdbc.model.TableColunm;
 import it.mengoni.jdbc.model.TableType;
 import it.mengoni.persistence.dao.AbstractRelationDao;
+import it.mengoni.persistence.dao.BigDecimalField;
+import it.mengoni.persistence.dao.BooleanField;
+import it.mengoni.persistence.dao.BytesField;
 import it.mengoni.persistence.dao.CharsetConverter;
 import it.mengoni.persistence.dao.Dao;
 import it.mengoni.persistence.dao.Dao.DatabaseProductType;
 import it.mengoni.persistence.dao.DateField;
-import it.mengoni.persistence.dao.FieldImpl;
+import it.mengoni.persistence.dao.DoubleField;
 import it.mengoni.persistence.dao.IntegerField;
 import it.mengoni.persistence.dao.JdbcHelper;
 import it.mengoni.persistence.dao.KeyGenerator;
-import it.mengoni.persistence.dao.PkFieldImpl;
+import it.mengoni.persistence.dao.PKBigDecimalField;
 import it.mengoni.persistence.dao.PkIntegerField;
 import it.mengoni.persistence.dao.PkShortField;
 import it.mengoni.persistence.dao.PkStringField;
 import it.mengoni.persistence.dao.PostgresqlSequenceReader;
 import it.mengoni.persistence.dao.ShortField;
+import it.mengoni.persistence.dao.SqlDateField;
 import it.mengoni.persistence.dao.StringField;
 import it.mengoni.persistence.dao.TimeField;
 import it.mengoni.persistence.dao.TimestampField;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,18 +53,15 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 	}
 
 
-	public void genDaoImpl(final Table table) throws IOException {
+	public void genDaoImplInner(final Table table) throws IOException {
 		final String tablename = Helper.toCamel(table.getJavaName());
-//		final String daoName = tablename + DAO_C;
-		final String daoImplName = tablename + DAO_C + IMPL_C ;
+		final String daoImplName = "_"+tablename + DAO_C + IMPL_C ;
 		String fileName = daoImplName + JAVA_EXT;
 		String filePackage = concatPackage(basePackage,DAO_P,IMPL_P);
 		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
 			@Override
 			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
 				List<TableColunm> fields = table.getColumns().getColunms();
-
-				importSet.add(java.sql.Types.class.getName());
 
 				importSet.add(AbstractRelationDao.class.getName());
 				importSet.add(it.mengoni.persistence.dao.Field.class.getName());
@@ -80,7 +82,9 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 				String daoName = tablename + DAO_C;
 				importSet.add(concatPackage(basePackage,DAO_P,daoName));
 
-				String s = String.format("public class %s extends AbstractRelationDao<%s> implements %s {\n", daoImplName, tablename, daoName);
+				buf.append("/* this file will be overwritten by code generator, apply edits oly if you agree to loose them*/\n\n");
+
+				String s = String.format("public abstract class %s extends AbstractRelationDao<%s> implements %s {\n", daoImplName, tablename, daoName);
 				buf.append(s);
 				buf.append("private static final List<Field<").append(tablename).append(", ?>> fields = new ArrayList<Field<").append(tablename).append(", ?>>();\n");
 				buf.append("static {");
@@ -106,19 +110,6 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 				buf.append("\", fields);");
 				if (isOneFieldPkWithSequence(table)){
 					if (table.getDatabaseProductType()==DatabaseProductType.postgresql){
-/*
-       setKeyGenerator(new KeyGenerator<Richiesta>() {
-
-        	PostgresqlSequenceReader gen = new PostgresqlSequenceReader("id_richiesta");
-
-			@Override
-			public Tuple newKey(Richiesta bean, String[] keyNames) throws SystemError,LogicError {
-				Integer id = gen.readSequence(RichiestaDaoImpl.this.jdbcHelper).intValue();
-				bean.setIdRichiesta(id);
-				return RichiestaDaoImpl.this.newKey(id);
-			}
-		});
-  */
 						importSet.add(KeyGenerator.class.getName());
 						importSet.add(PostgresqlSequenceReader.class.getName());
 						buf.append("setKeyGenerator(new KeyGenerator<").append(tablename).append(">() {\n");
@@ -168,10 +159,10 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 					importSet.add(PkIntegerField.class.getName());
 					buf.append(PkIntegerField.class.getSimpleName());
 					buf.append("<").append(tablename);
-				}else if (c.isPk()){
-					importSet.add(PkFieldImpl.class.getName());
-					buf.append(PkFieldImpl.class.getSimpleName());
-					buf.append("<").append(tablename).append(", ").append(fieldClassName);
+				}else if (c.isPk() && BigDecimal.class.getName().equals(fieldClassName)){
+					importSet.add(PKBigDecimalField.class.getName());
+					buf.append(PKBigDecimalField.class.getSimpleName());
+					buf.append("<").append(tablename);
 				}else if ("String".equals(fieldClassName)){
 					importSet.add(StringField.class.getName());
 					buf.append(StringField.class.getSimpleName());
@@ -188,6 +179,10 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 					importSet.add(DateField.class.getName());
 					buf.append(DateField.class.getSimpleName());
 					buf.append("<").append(tablename);
+				}else if ("java.sql.Date".equals(fieldClassName)){
+					importSet.add(SqlDateField.class.getName());
+					buf.append(SqlDateField.class.getSimpleName());
+					buf.append("<").append(tablename);
 				}else if ("java.sql.Timestamp".equals(fieldClassName)){
 					importSet.add(TimestampField.class.getName());
 					buf.append(TimestampField.class.getSimpleName());
@@ -196,20 +191,38 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 					importSet.add(TimeField.class.getName());
 					buf.append(TimeField.class.getSimpleName());
 					buf.append("<").append(tablename);
+				}else if (Double.class.getSimpleName().equals(fieldClassName)){
+					importSet.add(DoubleField.class.getName());
+					buf.append(DoubleField.class.getSimpleName());
+					buf.append("<").append(tablename);
+				}else if (byte[].class.getSimpleName().equals(fieldClassName)){
+					importSet.add(BytesField.class.getName());
+					buf.append(BytesField.class.getSimpleName());
+					buf.append("<").append(tablename);
+				}else if (BigDecimal.class.getName().equals(fieldClassName)){
+					importSet.add(BigDecimalField.class.getName());
+					buf.append(BigDecimalField.class.getSimpleName());
+					buf.append("<").append(tablename);
+				}else if (Boolean.class.getSimpleName().equals(fieldClassName)){
+					importSet.add(BooleanField.class.getName());
+					buf.append(BooleanField.class.getSimpleName());
+					buf.append("<").append(tablename);
 				} else {
-					importSet.add(FieldImpl.class.getName());
-					buf.append(FieldImpl.class.getSimpleName());
-					buf.append("<").append(tablename).append(", ").append(fieldClassName);
+//					importSet.add(FieldImpl.class.getName());
+//					buf.append(FieldImpl.class.getSimpleName());
+//					buf.append("<").append(tablename).append(", ").append(fieldClassName);
+					throw new IllegalArgumentException("tipo non gestito: " + fieldClassName + " " + c.getDbName() + " " + c.getParent().getParent().getDbName());
 				}
 				buf.append(">(\"").append(ModelFactory.quoteSqlReserved(c.getDbName(), c.getParent().getParent().getDatabaseProductType())).append("\", ");
-				buf.append("\"").append(propertyName).append("\", ");
+				buf.append("\"").append(propertyName).append("\"");
 				if (!c.isPk())
-					buf.append(c.isNullable()).append(", ");
-				buf.append(c.getLenght()).append(", ").
-				append(Helper.getTypeSqlString(c.getSqlType()));
+					buf.append(", ").append(c.isNullable());
+				if (fieldClassName.contains("String"))
+					buf.append(", ").append(c.getLenght()).append(" ");
+				//buf.append(Helper.getTypeSqlString(c.getSqlType()));
 			}
 		};
-		gen.createFile();
+		gen.createFile(true);
 
 	}
 
@@ -229,11 +242,13 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 			PkColumn pkf = pk.getColumns().get(0);
 			Schema schema = table.getParent().getParent();
 			TableType sequence = schema.find("SEQUENCE");
-			Iterator<DbItem> it = sequence.getChildIterator();
-			while(it.hasNext()){
-				DbItem obj = it.next();
-				if (obj.getDbName().equals(pkf.getDbName()))
-					return true;
+			if (sequence!=null){
+				Iterator<DbItem> it = sequence.getChildIterator();
+				while(it.hasNext()){
+					DbItem obj = it.next();
+					if (obj.getDbName().equals(pkf.getDbName()))
+						return true;
+				}
 			}
 
 		}
@@ -241,10 +256,10 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 	}
 
 
-	public void genDao(final Table table) throws IOException {
+	public void genDaoInterfaceInner(final Table table) throws IOException {
 		final String tablename = Helper.toCamel(table.getJavaName());
 		final String daoName = tablename + DAO_C;
-		String fileName = daoName + JAVA_EXT;
+		String fileName = "_"+daoName + JAVA_EXT;
 		String filePackage = concatPackage(basePackage,DAO_P);
 		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
 			@Override
@@ -253,14 +268,56 @@ public class GeneratorDao extends AbstractGenerator implements GeneratorConst{
 				List<TableColunm> fields = table.getColumns().getColunms();
 				importSet.add(Dao.class.getName());
 				importSet.add(concatPackage(basePackage,DTO_P,tablename));
-				buf.append("public interface ").append(daoName).append(" extends Dao<").append(tablename).append("> {\n");
+				buf.append("/* this file will be overwritten by code generator, apply edits oly if you agree to loose them*/\n\n");
+				buf.append("public interface _").append(daoName).append(" extends Dao<").append(tablename).append("> {\n");
 				KeyData kd = new KeyData(fields);
 				importSet.addAll(kd.importSet);
 				buf.append("public ").append(tablename).append(" getByPrimaryKey(").append(kd.kp).append(");\n");
 				buf.append("}\n");
 			}
 		};
-		gen.createFile();
+		gen.createFile(true);
+	}
+
+	public void genDaoInterfaceOuter(final Table table) throws IOException {
+		final String tablename = Helper.toCamel(table.getJavaName());
+		final String daoName = tablename + DAO_C;
+		String fileName = daoName + JAVA_EXT;
+		String filePackage = concatPackage(basePackage,DAO_P);
+		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
+			@Override
+			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
+				String daoName = tablename + DAO_C;
+				importSet.add(concatPackage(basePackage,DAO_P,daoName));
+				String s = String.format("public interface %s extends _%s {\n", daoName, daoName);
+				buf.append(s);
+				buf.append("}\n");
+			}
+		};
+		gen.createFile(false);
+
+	}
+
+	public void genDaoImplOuter(final Table table) throws IOException {
+		final String tablename = Helper.toCamel(table.getJavaName());
+		final String daoImplName = tablename + DAO_C + IMPL_C ;
+		String fileName = daoImplName + JAVA_EXT;
+		String filePackage = concatPackage(basePackage,DAO_P,IMPL_P);
+		JavaFileGen gen = new JavaFileGen(rootOut, filePackage, fileName) {
+			@Override
+			protected void createClassCode(StringBuilder buf, Set<String> importSet) {
+				importSet.add(JdbcHelper.class.getName());
+				importSet.add(CharsetConverter.class.getName());
+				String s = String.format("public class %s extends _%s  {\n", daoImplName, daoImplName);
+				buf.append(s);
+				buf.append("public ").append(daoImplName).append("(JdbcHelper jdbcHelper, CharsetConverter charsetConverter)" +
+						" {\nsuper(jdbcHelper, charsetConverter);\n");
+				buf.append("}\n");
+				buf.append("}\n");
+			}
+		};
+		gen.createFile(false);
+
 	}
 
 }

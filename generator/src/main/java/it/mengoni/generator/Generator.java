@@ -1,12 +1,12 @@
 package it.mengoni.generator;
 
-import it.mengoni.exception.SystemError;
 import it.mengoni.jdbc.model.Constraints;
 import it.mengoni.jdbc.model.Pk;
 import it.mengoni.jdbc.model.Schema;
 import it.mengoni.jdbc.model.Table;
 import it.mengoni.jdbc.model.TableType;
 import it.mengoni.persistence.dao.AbstractDaoFactory;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +39,11 @@ public class Generator extends AbstractGenerator implements GeneratorConst{
 				continue;
 			generateForTable(c);
 		}
-		genDaoFactory.createFile();
-		new GenAbstractBaseT().createFile();
+		genDaoFactory.createFile(true);
+		new GenAbstractBaseT().createFile(true);
 		String xml = FileUtils.readFileToString(new File("src/main/resources/applicationContext.xml"));
 		xml = xml.replaceAll("%DaoFactoryCLASS%", concatPackage(config.getBasePackage(), "DaoFactory")).replaceAll("%configuration.properties%", config.getBasePackage()+"-configuration.properties");
-		FileUtils.writeStringToFile(new File(concatPath(config.getRootOut()
+		FileUtils.writeStringToFile(new File(concatPath(config.getRootTestOut()
 				, config.getBasePackage()+"-applicationContext.xml")), xml);
 		StringBuilder buf = new StringBuilder();
 
@@ -51,12 +51,12 @@ public class Generator extends AbstractGenerator implements GeneratorConst{
 		buf.append("datasource_url=").append(jdbcConfig.getJdbcUrl()).append("\n");
 		buf.append("datasource_username=").append(jdbcConfig.getUser()).append("\n");
 		buf.append("datasource_password=").append(jdbcConfig.getPassword()).append("\n");
-		FileUtils.writeStringToFile(new File(concatPath(config.getRootOut()
+		FileUtils.writeStringToFile(new File(concatPath(config.getRootTestOut()
 				, config.getBasePackage()+"-configuration.properties")), buf.toString());
 
 		GenAllTests gat = new GenAllTests();
 		gat.tablenames = genDaoFactory.tablenames;
-		gat.createFile();
+		gat.createFile(true);
 
 	}
 
@@ -114,19 +114,23 @@ public class Generator extends AbstractGenerator implements GeneratorConst{
 		String tablename = Helper.toCamel(table.getJavaName());
 		genDaoFactory.addTable(tablename);
 		GeneratorDao gd = new GeneratorDao(config.getRootOut(), config.getBasePackage());
-		gd.genDaoImpl(table);
-		gd.genDao(table);
+		gd.genDaoImplInner(table);
+		gd.genDaoImplOuter(table);
+		gd.genDaoInterfaceInner(table);
+		gd.genDaoInterfaceOuter(table);
 		GeneratorPojo gp = new GeneratorPojo(config.getRootOut(), config.getBasePackage());
-		gp.genPojo(table);
+		gp.genPojoIntfInner(table);
+		gp.genPojoIntf(table);
 		gp.genPojoImpl(table);
+		gp.genPojoOuter(table);
 		GenTest gt = new GenTest(Helper.toCamel(table.getJavaName()));
-		gt.createFile();
+		gt.createFile(false);
 	}
 
 	private class GenAbstractBaseT extends JavaFileGen {
 
 		public GenAbstractBaseT() {
-			super(config.getRootOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "AbstractBaseT.java");
+			super(config.getRootTestOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "AbstractBaseT.java");
 		}
 
 		@Override
@@ -167,7 +171,7 @@ public class Generator extends AbstractGenerator implements GeneratorConst{
 		private String tablename;
 
 		public GenTest(String tablename) {
-			super(config.getRootOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "Test"+tablename+"Dao.java");
+			super(config.getRootTestOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "Test"+tablename+"Dao.java");
 			this.tablename = tablename;
 		}
 
@@ -196,7 +200,7 @@ public class Generator extends AbstractGenerator implements GeneratorConst{
 		private List<String> tablenames = new ArrayList<String>();
 
 		public GenAllTests() {
-			super(config.getRootOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "AllTests.java");
+			super(config.getRootTestOut(), Generator.this.concatPackage(config.getBasePackage(),TEST_P), "AllTests.java");
 		}
 
 		@Override

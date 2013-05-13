@@ -138,7 +138,7 @@ public abstract class AbstractColumn extends AbstractDbItem {
 		} else
 			cn1 = Helper.toCamel(getJavaName(), false);
 		String type = Helper.getJavaType(getSqlType(), importSet);
-		buf.append("private ").append(type).append(" ").append(cn1).append(" ;\n");
+		buf.append("protected ").append(type).append(" ").append(cn1).append(" ;\n");
 		return buf.toString();
 	}
 

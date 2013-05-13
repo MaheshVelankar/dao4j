@@ -1,6 +1,5 @@
 package it.mengoni.generator.gui.forms;
 
-import it.mengoni.exception.SystemError;
 import it.mengoni.generator.CodeGenConfig;
 import it.mengoni.generator.Generator;
 import it.mengoni.generator.Helper;
@@ -11,6 +10,7 @@ import it.mengoni.jdbc.model.Catalog;
 import it.mengoni.jdbc.model.Root;
 import it.mengoni.jdbc.model.Schema;
 import it.mengoni.persistence.dao.Dao.DatabaseProductType;
+import it.mengoni.persistence.exception.SystemError;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
