@@ -58,6 +58,11 @@ public abstract class PoProperty<T extends PersistentObject> implements Serializ
 		setResolved();
 	}
 
+	public void clear() {
+		value = null;
+		unResolve();
+	}
+
 	private Tuple newTuple(Object[] keys) {
 		switch (keys.length) {
 		case 1: return Unit.fromArray(keys);

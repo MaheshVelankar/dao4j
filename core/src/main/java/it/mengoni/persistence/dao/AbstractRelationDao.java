@@ -24,7 +24,7 @@ import org.javatuples.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractRelationDao<T extends PersistentObject> implements Dao<T> {
+public abstract class AbstractRelationDao<T extends PersistentObject> implements Dao<T>, BeanCreator<T> {
 
 	private static Logger logger = LoggerFactory.getLogger(AbstractRelationDao.class);
 	private static final String MODULO = AbstractRelationDao.class.getSimpleName();
@@ -94,20 +94,20 @@ public abstract class AbstractRelationDao<T extends PersistentObject> implements
 		this.charsetConverter = charsetConverter;
 	}
 
-	private BeanCreator<T> beanCreator = new BeanCreator<T>(){
-
-		@Override
-		public T getBean(ResultSet rs, int rowNum) throws SystemError, LogicError {
-			try{
-				T bean = AbstractRelationDao.this.getBean(rs, rowNum);
-				bean.saved();
-				return bean;
-			} catch (SQLException e) {
-				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "getBean",  e);
-			}
-		}
-
-	};
+	//	private BeanCreator<T> beanCreator = new BeanCreator<T>(){
+	//
+	//		@Override
+	//		public T getBean(ResultSet rs, int rowNum) throws SystemError, LogicError {
+	//			try{
+	//				T bean = AbstractRelationDao.this.getBean(rs, rowNum);
+	//				bean.saved();
+	//				return bean;
+	//			} catch (SQLException e) {
+	//				throw new SystemError("Error in query execution "+getDaoLabel() +" :" + e, AbstractRelationDao.this.getClass().getSimpleName(), "getBean",  e);
+	//			}
+	//		}
+	//
+	//	};
 
 	private BeanSqlSetter<T> beanPkSetter = new BeanSqlSetter<T>(){
 		@Override
@@ -155,12 +155,12 @@ public abstract class AbstractRelationDao<T extends PersistentObject> implements
 
 	public List<T> getAllOrder(int page, int pageSize, String orderBy) throws SystemError, LogicError {
 		StringBuilder buf = new StringBuilder(getSelectSql(page, pageSize, orderBy));
-		return jdbcHelper.queryForList(buf.toString(), beanCreator);
+		return jdbcHelper.queryForList(buf.toString(), this);
 	}
 
 	public List<T> getAllOrder(String orderBy) throws SystemError, LogicError {
 		StringBuilder buf = new StringBuilder(getSelectSql(0,0, orderBy));
-		return jdbcHelper.queryForList(buf.toString(), beanCreator);
+		return jdbcHelper.queryForList(buf.toString(), this);
 	}
 
 	protected String calcPreselect(int page, int pageSize) throws LogicError {
@@ -170,23 +170,10 @@ public abstract class AbstractRelationDao<T extends PersistentObject> implements
 				preselect.append("first ").append(pageSize).append(" ");
 				if (page>1)
 					preselect.append("skip ").append((page-1)*pageSize).append(" ");
-			}
-			if (databaseProductType==DatabaseProductType.postgresql){
-				/*Now suppose you wanted to show results 11-20. With the OFFSET keyword its just as easy, the following query will do:
-
-SELECT column FROM table
-LIMIT 10 OFFSET 10*/
+			} else if (databaseProductType==DatabaseProductType.postgresql){
 				preselect.append("LIMIT ").append(pageSize).append(" ");
-				//				if (page>1)
 				preselect.append("OFFSET ").append((page-1)*pageSize).append(" ");
-			}
-			if (databaseProductType==DatabaseProductType.mysql){
-				/*
-				 * With two arguments, the first argument specifies the offset of the first row to return,
-				 * and the second specifies the maximum number of rows to return.
-				 * The offset of the initial row is 0 (not 1):
-SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
-				 */
+			} else if (databaseProductType==DatabaseProductType.mysql){
 				preselect.append("LIMIT ").append((page-1)*pageSize).append(", ").append(pageSize);
 			}
 			return preselect.toString();
@@ -203,7 +190,7 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 
 	@Override
 	public List<T> getAll(int page, int pageSize) throws LogicError {
-		return jdbcHelper.queryForList(getSelectSql(page, pageSize, null), beanCreator);
+		return jdbcHelper.queryForList(getSelectSql(page, pageSize, null), this);
 	}
 
 	@Override
@@ -295,7 +282,7 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 	}
 
 	public List<T> getList(String sql, Object ... params) throws SystemError, LogicError {
-		return jdbcHelper.queryForList(sql, beanCreator, params);
+		return jdbcHelper.queryForList(sql, this, params);
 	}
 
 	public List<T> getListOrder(String sql, String orderBy, Object ... params) throws SystemError, LogicError {
@@ -303,14 +290,33 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 		if (orderBy!=null && !orderBy.trim().isEmpty()){
 			buf.append(" order by ").append(orderBy);
 		}
-		return jdbcHelper.queryForList(buf.toString(), beanCreator, params);
+		return jdbcHelper.queryForList(buf.toString(), this, params);
 	}
 
 
 	public T get(Tuple key) throws SystemError, LogicError{
 		if (key==null)
 			throw new IllegalArgumentException("bean key is null" + getDaoLabel());
-		return jdbcHelper.queryForObject(getSelectSqlForKey(), beanCreator, key.toArray());
+		return jdbcHelper.queryForObject(getSelectSqlForKey(), this, key.toArray());
+	}
+
+	public T reload(final T bean){
+		if (bean==null || bean.isNew())
+			throw new IllegalArgumentException("bean key is null" + getDaoLabel());
+		return jdbcHelper.queryForObject(getSelectSqlForKey(), new BeanCreator<T>() {
+			@Override
+			public T getBean(ResultSet rs, int rowNum) {
+				for (Field<T, ?> field : fields) {
+					try {
+						field.readValueFrom(rs, bean);
+					} catch (Exception e) {
+						throw new SystemError("Error in setValue:" + getRelationName() +"."+ field.getName(), e);
+					}
+				}
+				bean.saved();
+				return bean;
+			}
+		}, bean.getKey().toArray());
 	}
 
 	protected String getSelectSqlForKey() {
@@ -336,7 +342,7 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 			}
 		}
 		StringBuilder buf = new StringBuilder(getSelectSql(page, pageSize, orderBy, where.getWhere()));
-		return jdbcHelper.queryForList(buf.toString(), beanCreator, where.getParamsArray());
+		return jdbcHelper.queryForList(buf.toString(), this, where.getParamsArray());
 	}
 
 	@Override
@@ -492,14 +498,14 @@ SELECT * FROM tbl LIMIT 5,10;  # Retrieve rows 6-15
 		return pkSql;
 	}
 
-	protected T getBean(ResultSet rs, int rowNum) throws SQLException {
+	public T getBean(ResultSet rs, int rowNum)  {
 		T bean = newIstance();
 		for (Field<T, ?> field : fields) {
 			try {
 				field.readValueFrom(rs, bean);
 			} catch (Exception e) {
-				if (e instanceof SQLException)
-					throw (SQLException)e;
+				//				if (e instanceof SQLException)
+				//					throw (SQLException)e;
 				throw new SystemError("Error in setValue:" + getRelationName() +"."+ field.getName(), e);
 			}
 		}

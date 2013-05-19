@@ -94,5 +94,4 @@ public abstract class AbstractPersistentObject implements PersistentObject {
 		this.key = key;
 	}
 
-
 }

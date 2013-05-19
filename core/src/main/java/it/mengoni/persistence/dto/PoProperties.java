@@ -44,6 +44,11 @@ public abstract class PoProperties<T extends PersistentObject> implements Serial
 		setResolved();
 	}
 
+	public void clear() {
+		this.value.clear();
+		unResolve();
+	}
+
 	protected List<T> resolve(Dao<T> dao, Condition[] conditions) {
 		return dao.getListFor(conditions);
 	}

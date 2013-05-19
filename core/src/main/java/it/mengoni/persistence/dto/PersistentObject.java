@@ -32,6 +32,8 @@ public interface PersistentObject extends Serializable{
 
 	public void beforeInsert();
 
+	public void reload();
+
 	public PersistentObject NULL_OBJECT = new PersistentObject() {
 
 		/**
@@ -100,6 +102,12 @@ public interface PersistentObject extends Serializable{
 
 		@Override
 		public void setKey(Tuple key) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public void reload() {
 			// TODO Auto-generated method stub
 
 		}

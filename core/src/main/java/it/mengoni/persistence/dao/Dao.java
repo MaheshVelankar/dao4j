@@ -19,6 +19,8 @@ public interface Dao<T extends PersistentObject> {
 
 	public T get(Tuple key) throws LogicError;
 
+	public T reload(T bean);
+
 	public List<T> getAll() throws LogicError;
 
 	public List<T> getAllOrder(String orderBy) throws LogicError;
