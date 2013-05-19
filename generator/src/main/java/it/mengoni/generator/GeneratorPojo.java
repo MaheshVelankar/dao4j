@@ -143,33 +143,33 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 				//inizio costruttore
 				buf.append("    public ").append(pojoImplName).append("(){\n");
 				Fks x = table.getForeignKeys();
-				if (x!=null){
-					List<Fk> fks = x.getChildren();
-					/* this empty instances are used by ZK binder in multiple dots bindings paths*/
-					for (int i = 0; i < fks.size(); i++) {
-						Fk fk = (Fk) fks.get(i);
-						if (!fk.isSelected()) continue;
-						if (!"1".endsWith(fk.getKeySeq())) continue;
-						String s = fk.getFkcolumnName();
-						if (s.toLowerCase().startsWith("id_"))
-							s = s.substring(3);
-						String pkTypeName = Helper.toCamel(s);
-						String extPojoIntf = Helper.toCamel(fk.getPktableName());
-						buf.append("to").append(pkTypeName).append("= new PoLazyProperty<").append(extPojoIntf).append(">();\n");
-						String extPojoClass = extPojoIntf+IMPL_C;
-						if (("_"+extPojoClass).equals(pojoImplName)) {
-							buf.append("/* link to ").append(extPojoClass).append(" skipped, prevent stack overflow... */\n");
-							continue;
-						}
-						importSet.add(concatPackage(basePackage,DAO_FACTORY));
-						importSet.add(PoProperty.class.getName());
-						importSet.add(PoLazyProperty.class.getName());
-						importSet.add(concatPackage(basePackage,DTO_P,Helper.toCamel(fk.getPktableName())));
-						//String fkPropParam = Helper.toCamel(fk.getFkcolumnName(), false);
-						buf.append("to").append(pkTypeName).append(".setValue(new ").append(extPojoClass).append("());\n");
-						buf.append("to").append(pkTypeName).append(".unResolve();\n");
-					}
-				}
+//				if (x!=null){
+//					List<Fk> fks = x.getChildren();
+//					/* this empty instances are used by ZK binder in multiple dots bindings paths*/
+//					for (int i = 0; i < fks.size(); i++) {
+//						Fk fk = (Fk) fks.get(i);
+//						if (!fk.isSelected()) continue;
+//						if (!"1".endsWith(fk.getKeySeq())) continue;
+//						String s = fk.getFkcolumnName();
+//						if (s.toLowerCase().startsWith("id_"))
+//							s = s.substring(3);
+//						String pkTypeName = Helper.toCamel(s);
+//						String extPojoIntf = Helper.toCamel(fk.getPktableName());
+//						buf.append("to").append(pkTypeName).append("= new PoLazyProperty<").append(extPojoIntf).append(">();\n");
+//						String extPojoClass = extPojoIntf+IMPL_C;
+//						if (("_"+extPojoClass).equals(pojoImplName)) {
+//							buf.append("/* link to ").append(extPojoClass).append(" skipped, prevent stack overflow... */\n");
+//							continue;
+//						}
+//						importSet.add(concatPackage(basePackage,DAO_FACTORY));
+//						importSet.add(PoProperty.class.getName());
+//						importSet.add(PoLazyProperty.class.getName());
+//						importSet.add(concatPackage(basePackage,DTO_P,Helper.toCamel(fk.getPktableName())));
+//						//String fkPropParam = Helper.toCamel(fk.getFkcolumnName(), false);
+//						buf.append("to").append(pkTypeName).append(".setValue(new ").append(extPojoClass).append("());\n");
+//						buf.append("to").append(pkTypeName).append(".unResolve();\n");
+//					}
+//				}
 
 				TableReferences refs = table.getRefs();
 				if (refs!=null){
@@ -243,13 +243,35 @@ public class GeneratorPojo extends AbstractGenerator implements GeneratorConst{
 						String fkPropParam = Helper.toCamel(fk.getFkcolumnName(), false);
 						buf.append("protected transient PoProperty<").append(extPojoClass).append("> to").append(pkTypeName).append(";\n");
 						buf.append("public ").append(extPojoClass).append(" getTo").append(pkTypeName).append("(){ \n");
+/*
+ * if (toCompetenze==null){
+        toCompetenze = new PoLazyProperty<Competenze>();
+        toCompetenze.setValue(new CompetenzeImpl());
+        toCompetenze.unResolve();
+   }
 
+*/
+						buf.append("if (to").append(pkTypeName).append("==null){ \n");
+						buf.append("     to").append(pkTypeName).append(" = new PoLazyProperty<").append(extPojoClass).append(">();\n");
+						buf.append("     to").append(pkTypeName).append(".setValue(new ").append(extPojoClass+IMPL_C).append("());\n");
+						buf.append("     to").append(pkTypeName).append(".unResolve();\n");
+						buf.append("}\n");
+						buf.append("\n");
+
+						////
 						buf.append("if(").append(fkPropParam).append("==null) \n return this.to").append(pkTypeName).append(".getValue();\n");
 
 						buf.append("return to").append(pkTypeName).append(".getValue(").append(DAO_FACTORY).append(".getInstance().get").
 							append(extPojoClass).append(DAO_C).append("(), ").append(fkPropParam).append(");\n");
 						buf.append("}\n");
 						buf.append("public void setTo").append(pkTypeName).append("(").append(extPojoClass).append(" to").append(pkTypeName).append("){\n");
+
+						buf.append("if (this.to").append(pkTypeName).append("==null){\n");
+						buf.append("     this.to").append(pkTypeName).append(" = new PoLazyProperty<").append(extPojoClass).append(">(); \n");
+						buf.append("}\n");
+						buf.append("\n");
+
+
 						buf.append("    this.to").append(pkTypeName).append(".setValue(to").append(pkTypeName).append(");\n");
 						buf.append("  this.").append(fkPropParam).append(" = to").append(pkTypeName).append("==null?null:to").append(pkTypeName).append(".get").append(Helper.toCamel(fk.getPkcolumnName(), true)).append("();\n");
 
