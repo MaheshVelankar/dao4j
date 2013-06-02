@@ -233,6 +233,7 @@ public void reload() {
 						importSet.add(PoProperty.class.getName());
 						importSet.add(PoLazyProperty.class.getName());
 						importSet.add(concatPackage(basePackage,DTO_P,Helper.toCamel(fk.getPktableName())));
+						buf.append("if (to").append(pkTypeName).append(" !=null)\n");
 						buf.append("to").append(pkTypeName).append(".clear();\n");
 					}
 				}
