@@ -73,6 +73,13 @@ public class JdbcHelper {
 	}
 
 	public Connection getConnection() throws SystemError {
+		/**
+		 * check if there is a transaction is present
+		 */
+		Connection c = TransactionManager.getInstance().getConnection();
+		if (c!=null)
+			return c;
+		// if not, get a new connection
 		try {
 			return datasource.getConnection();
 		} catch (SQLException e) {

@@ -1,12 +1,14 @@
 package it.mengoni.persistence.dao;
 
 import it.mengoni.persistence.db.DaoFactory;
+import it.mengoni.persistence.db.TransactionMethod;
 import it.mengoni.persistence.dto.PersistentObject;
 import it.mengoni.persistence.exception.SystemError;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
+import java.sql.Savepoint;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,12 +18,12 @@ public abstract class AbstractDaoFactory implements DaoFactory {
 
 	private DataSource datasource;
 	private CharsetConverter charsetConverter;
+	private TransactionManager tm = TransactionManager.getInstance();
 
 	public void init() {
 		if (datasource==null)
 			throw new IllegalStateException("dataSource not assigned ");
 	}
-
 
 	public CharsetConverter getCharsetConverter() {
 		return charsetConverter;
@@ -87,6 +89,71 @@ public abstract class AbstractDaoFactory implements DaoFactory {
 		} catch (Exception e) {
 			throw new SystemError("Error connection open",e);
 		}
+	}
+
+	public void startTransaction() {
+		tm.start(getConnection());
+	}
+
+	public void startTransaction(int isolationLevel) {
+		tm.start(getConnection(), isolationLevel);
+	}
+
+	public void commit() {
+		tm.commit();
+	}
+
+	public boolean isTransactionActive() {
+		return tm.isActive();
+	}
+
+	public void rollback() {
+		tm.rollback();
+	}
+
+	public void rollback(Savepoint savepoint) {
+		tm.rollback(savepoint);
+	}
+
+	public void setRollbackOnly() {
+		tm.setRollbackOnly();
+	}
+
+	public void setTransactionError(Throwable error) {
+		tm.setTransactionError(error);
+	}
+
+	public void resetTransactionError() {
+		tm.resetTransactionError();
+	}
+
+	public Savepoint setTransactionSavepoint(String name) {
+		return tm.setSavepoint(name);
+	}
+
+	public Savepoint setTransactionSavepoint() {
+		return tm.setSavepoint();
+	}
+
+	public void releaseTransactionSavepoint(Savepoint savepoint) {
+		tm.releaseSavepoint(savepoint);
+	}
+
+	public void setTransactionIsolation(int level) {
+		tm.setTransactionIsolation(level);
+	}
+
+	public int getTransactionIsolation() {
+		return tm.getTransactionIsolation();
+	}
+
+	public void doInTransaction(TransactionMethod method) {
+		tm.doInTransaction(getConnection(), method);
+	}
+
+	public void doInTransaction(int isolationLevel,
+			TransactionMethod method) {
+		tm.doInTransaction(getConnection(), isolationLevel, method);
 	}
 
 }
